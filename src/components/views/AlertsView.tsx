@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import type { AlertRecord, VerificationEvent } from '../../types/verification';
 import { DEMO_ALERT_RECORDS, DEMO_MONITORING_RUNS, DEMO_VERIFICATION_EVENTS } from '../../data/verificationData';
 import { DemoBadge } from '../common/Badge';
 import { Button } from '../common/Button';
+import { fetchAlerts, patchAlertStatus } from '../../api/client';
 import {
   Bell,
   ArrowLeft,
@@ -16,6 +17,8 @@ import {
   Compass,
   AlertTriangle,
   Layers,
+  Wifi,
+  WifiOff,
   X
 } from 'lucide-react';
 
@@ -49,7 +52,53 @@ const RUN_STATUS_CONFIG = {
 const LOCAL_STORAGE_KEY = 'cl01_alert_records_state';
 
 export const AlertsView: React.FC<AlertsViewProps> = ({ onBackToOverview, onNavigateToMap }) => {
-  // Load persistent alerts from localStorage if available, otherwise fallback to demo alerts
+  // ── API state — store as AlertRecord[] so the rest of the view needs no changes
+  const [apiLoading, setApiLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [apiOnline, setApiOnline] = useState(false);
+
+  const loadFromApi = useCallback(() => {
+    setApiLoading(true);
+    setApiError(null);
+    fetchAlerts({ pageSize: 100 })
+      .then(res => {
+        // Map API shape → AlertRecord (the frontend canonical type)
+        const merged: AlertRecord[] = res.data.map(a => ({
+          id: a.id,
+          eventId: a.eventId,
+          eventName: a.eventName,
+          regionId: a.regionId,
+          regionName: a.regionName,
+          stateUT: a.stateUT,
+          severity: a.severity as AlertRecord['severity'],
+          status: a.status as AlertRecord['status'],
+          outcome: a.outcome as AlertRecord['outcome'],
+          estimatedAreaHa: a.estimatedAreaHa,
+          firstObservationDate: a.firstObservationDate,
+          generatedAt: a.generatedAt,
+          acknowledgedAt: a.acknowledgedAt,
+          resolvedAt: a.resolvedAt,
+          confidence: a.confidence ?? null,
+          isDuplicate: a.isDuplicate,
+          parentAlertId: a.parentAlertId,
+          notificationChannels: a.notificationChannels as AlertRecord['notificationChannels'],
+          notes: a.notes,
+        }));
+        setAlerts(merged);
+        setApiOnline(true);
+        setApiLoading(false);
+      })
+      .catch(err => {
+        console.warn('[AlertsView] API unavailable — falling back to demo data:', err);
+        setApiError(err instanceof Error ? err.message : String(err));
+        setApiOnline(false);
+        setApiLoading(false);
+      });
+  }, []);
+
+  useEffect(() => { loadFromApi(); }, [loadFromApi]);
+
+  // Use API data when available, fall back to localStorage → demo data
   const [alerts, setAlerts] = useState<AlertRecord[]>(() => {
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -63,6 +112,7 @@ export const AlertsView: React.FC<AlertsViewProps> = ({ onBackToOverview, onNavi
     return DEMO_ALERT_RECORDS;
   });
 
+
   const [activeTab, setActiveTab] = useState<'alerts' | 'monitoring' | 'integration'>('alerts');
   const [selectedAlert, setSelectedAlert] = useState<AlertRecord | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -74,35 +124,45 @@ export const AlertsView: React.FC<AlertsViewProps> = ({ onBackToOverview, onNavi
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
 
-  // Persist alert status modifications to localStorage
+  // Status change — calls PATCH /api/alerts/:id when API is online, always updates local state
   const handleStatusChange = (id: string, newStatus: AlertRecord['status']) => {
-    setAlerts(prev => {
-      const updated = prev.map(a => {
-        if (a.id === id) {
-          return {
-            ...a,
-            status: newStatus,
-            acknowledgedAt: newStatus === 'acknowledged' ? new Date().toISOString() : a.acknowledgedAt,
-            resolvedAt: newStatus === 'resolved' ? new Date().toISOString() : a.resolvedAt,
-          };
-        }
-        return a;
+    const updateLocal = () => {
+      setAlerts(prev => {
+        const updated = prev.map(a => {
+          if (a.id === id) {
+            return {
+              ...a,
+              status: newStatus,
+              acknowledgedAt: newStatus === 'acknowledged' ? new Date().toISOString() : a.acknowledgedAt,
+              resolvedAt: newStatus === 'resolved' ? new Date().toISOString() : a.resolvedAt,
+            };
+          }
+          return a;
+        });
+        try { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated)); } catch {}
+        return updated;
       });
-
-      try {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
-      } catch (err) {
-        console.warn("Failed to write to localStorage:", err);
+      if (selectedAlert?.id === id) {
+        setSelectedAlert(prev => prev ? { ...prev, status: newStatus } : null);
       }
-      return updated;
-    });
+    };
 
-    if (selectedAlert && selectedAlert.id === id) {
-      setSelectedAlert(prev => prev ? { ...prev, status: newStatus } : null);
+    if (apiOnline) {
+      patchAlertStatus(id, newStatus as import('../../api/client').AlertStatus)
+        .then(() => {
+          updateLocal();
+          setStatusMessage(`Alert ${id} updated to "${STATUS_CONFIG[newStatus].label}" (synced to API).`);
+        })
+        .catch(() => {
+          updateLocal();
+          setStatusMessage(`Alert ${id} updated locally — API sync failed.`);
+        })
+        .finally(() => { setTimeout(() => setStatusMessage(null), 4000); });
+    } else {
+      updateLocal();
+      setStatusMessage(`Alert ${id} updated to "${STATUS_CONFIG[newStatus].label}". Saved locally (API offline).`);
+      setTimeout(() => setStatusMessage(null), 4000);
     }
-
-    setStatusMessage(`Alert ${id} status updated to "${STATUS_CONFIG[newStatus].label}". Saved to browser local storage.`);
-    setTimeout(() => setStatusMessage(null), 4000);
   };
 
   // Associated VerificationEvent for the selected alert
@@ -187,6 +247,27 @@ export const AlertsView: React.FC<AlertsViewProps> = ({ onBackToOverview, onNavi
         </div>
 
         <div className="flex items-center gap-2">
+          {/* API Status indicator */}
+          {apiLoading ? (
+            <span className="flex items-center gap-1 text-xs font-mono text-slate-400 px-2 py-1 rounded border border-slate-700/40 bg-slate-900/40">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-pulse" />
+              API…
+            </span>
+          ) : apiOnline ? (
+            <span className="flex items-center gap-1 text-xs font-mono text-emerald-400 px-2 py-1 rounded border border-emerald-800/40 bg-emerald-950/30">
+              <Wifi size={11} />
+              API Live
+            </span>
+          ) : (
+            <button
+              onClick={loadFromApi}
+              title={apiError ?? 'Backend offline'}
+              className="flex items-center gap-1 text-xs font-mono text-amber-400 px-2 py-1 rounded border border-amber-800/40 bg-amber-950/30 hover:bg-amber-900/40 transition-colors"
+            >
+              <WifiOff size={11} />
+              API Offline · Retry
+            </button>
+          )}
           <Button
             variant="outline"
             size="sm"

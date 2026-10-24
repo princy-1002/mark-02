@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { DemoBadge } from '../common/Badge';
 import { Button } from '../common/Button';
 import { DEMO_VERIFICATION_EVENTS, DEMO_ALERT_RECORDS, DEMO_MONITORING_RUNS } from '../../data/verificationData';
 import { MONITORED_REGIONS } from '../../data/demoData';
 import { isDateInFilterRange, isAreaInFilterRange } from '../../types/layersAndFilters';
 import type { DateRangeOption } from '../../types/monitoring';
+import { downloadReportCsv, fetchReportJson } from '../../api/client';
 import {
   FileSpreadsheet,
   ArrowLeft,
@@ -89,103 +90,115 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ onBackToOverview, onNa
     };
   }, [filteredEvents]);
 
-  // RFC 4180 Compliant CSV Export
-  const handleExportCSV = () => {
-    if (filteredEvents.length === 0) return;
-
-    const escapeCsv = (val: any): string => {
-      if (val === null || val === undefined) return '';
-      const str = String(val);
-      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-        return `"${str.replace(/"/g, '""')}"`;
-      }
-      return str;
+  // RFC 4180 Compliant CSV Export — uses backend API when available, falls back to local generation
+  const handleExportCSV = useCallback(async () => {
+    const apiFilters = {
+      regionId: selectedRegionId !== 'all' ? selectedRegionId : undefined,
+      severity: selectedSeverity !== 'all' ? selectedSeverity : undefined,
+      dateRange: selectedDateRange,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
     };
 
-    const metadataRows = [
-      ['# CL-01 Environmental Intelligence Forest Loss Report'],
-      ['# Generation Timestamp', new Date().toISOString()],
-      ['# Region Scope', selectedRegionId === 'all' ? 'All Monitored Regions' : selectedRegionId],
-      ['# Period Scope', startDate ? `${startDate} to ${endDate || 'present'}` : selectedDateRange],
-      ['# Total Incidents', summaryMetrics.totalIncidents],
-      ['# Total Area (ha)', summaryMetrics.totalAreaHectares],
-      ['# Disclaimer', 'DEMO DATA: Synthetic satellite vectors for validation purposes.'],
-      []
-    ];
+    try {
+      // Try the backend API first
+      await downloadReportCsv(apiFilters);
+    } catch {
+      // Fallback: generate CSV locally from demo data
+      if (filteredEvents.length === 0) return;
 
-    const headers = [
-      'Incident ID',
-      'Incident Name',
-      'Region ID',
-      'State / Territory',
-      'Latitude',
-      'Longitude',
-      'Observation Date',
-      'Estimated Area (ha)',
-      'Verification Outcome',
-      'Rule Priority Score (%)',
-      'NDVI Delta',
-      'SAR Radar Corroborated',
-      'Thermal VIIRS Fire',
-      'Analyst Status'
-    ];
+      const escapeCsv = (val: unknown): string => {
+        if (val === null || val === undefined) return '';
+        const str = String(val);
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
 
-    const dataRows = filteredEvents.map(ev => [
-      escapeCsv(ev.id),
-      escapeCsv(ev.name),
-      escapeCsv(ev.regionId),
-      escapeCsv(ev.stateUT),
-      ev.coordinates.lat,
-      ev.coordinates.lng,
-      escapeCsv(ev.firstObservationDate),
-      ev.estimatedAreaHa ?? 'N/A',
-      escapeCsv(ev.outcome),
-      Math.round(ev.ruleScore.rulePriorityScore * 100),
-      ev.evidenceBundle.optical.ndviDelta ? ev.evidenceBundle.optical.ndviDelta.toFixed(2) : 'N/A',
-      ev.evidenceBundle.radar.status === 'supports' ? 'YES' : 'NO',
-      ev.evidenceBundle.fire.fireConfirmed ? 'YES' : 'NO',
-      escapeCsv(ev.analystDecision ?? 'unreviewed')
-    ]);
+      const metadataRows = [
+        ['# CL-01 Environmental Intelligence Forest Loss Report'],
+        ['# Generation Timestamp', new Date().toISOString()],
+        ['# Region Scope', selectedRegionId === 'all' ? 'All Monitored Regions' : selectedRegionId],
+        ['# Period Scope', startDate ? `${startDate} to ${endDate || 'present'}` : selectedDateRange],
+        ['# Total Incidents', summaryMetrics.totalIncidents],
+        ['# Total Area (ha)', summaryMetrics.totalAreaHectares],
+        ['# Disclaimer', 'DEMO DATA: Synthetic satellite vectors for validation purposes. API was offline.'],
+        []
+      ];
 
-    const csvLines = [
-      ...metadataRows.map(r => r.join(',')),
-      headers.join(','),
-      ...dataRows.map(r => r.join(','))
-    ].join('\r\n');
+      const headers = [
+        'Incident ID', 'Incident Name', 'Region ID', 'State / Territory',
+        'Latitude', 'Longitude', 'Observation Date', 'Estimated Area (ha)',
+        'Verification Outcome', 'Rule Priority Score (%)', 'NDVI Delta',
+        'SAR Radar Corroborated', 'Thermal VIIRS Fire', 'Analyst Status'
+      ];
 
-    const blob = new Blob([csvLines], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `cl01-forest-loss-report-${selectedRegionId}-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+      const dataRows = filteredEvents.map(ev => [
+        escapeCsv(ev.id), escapeCsv(ev.name), escapeCsv(ev.regionId), escapeCsv(ev.stateUT),
+        ev.coordinates.lat, ev.coordinates.lng, escapeCsv(ev.firstObservationDate),
+        ev.estimatedAreaHa ?? 'N/A', escapeCsv(ev.outcome),
+        Math.round(ev.ruleScore.rulePriorityScore * 100),
+        ev.evidenceBundle.optical.ndviDelta ? ev.evidenceBundle.optical.ndviDelta.toFixed(2) : 'N/A',
+        ev.evidenceBundle.radar.status === 'supports' ? 'YES' : 'NO',
+        ev.evidenceBundle.fire.fireConfirmed ? 'YES' : 'NO',
+        escapeCsv(ev.analystDecision ?? 'unreviewed')
+      ]);
+
+      const csvLines = [
+        ...metadataRows.map(r => r.join(',')),
+        headers.join(','),
+        ...dataRows.map(r => r.join(','))
+      ].join('\r\n');
+
+      const blob = new Blob([csvLines], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cl01-forest-loss-report-${selectedRegionId}-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  }, [selectedRegionId, selectedSeverity, selectedDateRange, startDate, endDate, filteredEvents, summaryMetrics]);
 
   // Printable Report Trigger
   const handlePrintReport = () => {
     window.print();
   };
 
-  // Full Audit JSON Export
-  const handleExportJSON = () => {
-    const exportData = {
-      exportTimestamp: new Date().toISOString(),
-      platform: 'CL-01 Environmental Intelligence & Verification Platform',
-      disclaimer: 'PROTOTYPE DEMO DATA — Not evaluated against official ground truth reference sets',
-      filters: {
-        region: selectedRegionId,
-        dateRange: selectedDateRange,
-        startDate,
-        endDate,
-        minArea: minAreaFilter,
-        severity: selectedSeverity
-      },
-      summaryMetrics,
-      incidents: filteredEvents,
-      alerts: DEMO_ALERT_RECORDS,
-      monitoringRuns: DEMO_MONITORING_RUNS
+  // Full Audit JSON Export — uses backend API when available, falls back to local
+  const handleExportJSON = useCallback(async () => {
+    const apiFilters = {
+      regionId: selectedRegionId !== 'all' ? selectedRegionId : undefined,
+      severity: selectedSeverity !== 'all' ? selectedSeverity : undefined,
+      dateRange: selectedDateRange,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
     };
+
+    let exportData: object;
+    try {
+      exportData = await fetchReportJson(apiFilters);
+    } catch {
+      // Fallback to local data
+      exportData = {
+        exportTimestamp: new Date().toISOString(),
+        platform: 'CL-01 Environmental Intelligence & Verification Platform',
+        disclaimer: 'PROTOTYPE DEMO DATA — API was offline. Local demo data used.',
+        filters: {
+          region: selectedRegionId,
+          dateRange: selectedDateRange,
+          startDate,
+          endDate,
+          minArea: minAreaFilter,
+          severity: selectedSeverity
+        },
+        summaryMetrics,
+        incidents: filteredEvents,
+        alerts: DEMO_ALERT_RECORDS,
+        monitoringRuns: DEMO_MONITORING_RUNS
+      };
+    }
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -193,7 +206,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ onBackToOverview, onNa
     a.download = `cl01-comprehensive-audit-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  };
+  }, [selectedRegionId, selectedSeverity, selectedDateRange, startDate, endDate, minAreaFilter, filteredEvents, summaryMetrics]);
 
   return (
     <div className="space-y-6 print:space-y-4 print:text-black print:bg-white">
