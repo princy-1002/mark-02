@@ -216,6 +216,7 @@ export interface AlertRecord {
   generatedAt: string;
   acknowledgedAt: string | null;
   resolvedAt: string | null;
+  confidence?: number | null;
   /** Whether a duplicate alert was suppressed for this continuing event */
   isDuplicate: boolean;
   /** ID of the original alert if this is a continuation */

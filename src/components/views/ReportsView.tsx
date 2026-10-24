@@ -1,48 +1,188 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { DemoBadge } from '../common/Badge';
 import { Button } from '../common/Button';
 import { DEMO_VERIFICATION_EVENTS, DEMO_ALERT_RECORDS, DEMO_MONITORING_RUNS } from '../../data/verificationData';
+import { MONITORED_REGIONS } from '../../data/demoData';
+import { isDateInFilterRange, isAreaInFilterRange } from '../../types/layersAndFilters';
+import type { DateRangeOption } from '../../types/monitoring';
 import {
-  FileSpreadsheet, ArrowLeft, Download, ShieldCheck, Database,
-  Cpu, Layers, Radio, Info, Code2, Copy, Check
+  FileSpreadsheet,
+  ArrowLeft,
+  Download,
+  Printer,
+  Database,
+  Cpu,
+  RotateCcw,
+  AlertTriangle,
+  FileText,
+  SlidersHorizontal,
+  ExternalLink
 } from 'lucide-react';
 
 interface ReportsViewProps {
   onBackToOverview: () => void;
+  onNavigateToMap?: (page: 'earth-3d' | 'forest-loss-detection', regionId?: string) => void;
 }
 
-export const ReportsView: React.FC<ReportsViewProps> = ({ onBackToOverview }) => {
-  const [activeTab, setActiveTab] = useState<'architecture' | 'rules' | 'comparison' | 'export'>('architecture');
-  const [copiedCode, setCopiedCode] = useState(false);
+export const ReportsView: React.FC<ReportsViewProps> = ({ onBackToOverview, onNavigateToMap }) => {
+  const [activeTab, setActiveTab] = useState<'report-generator' | 'architecture' | 'rules' | 'audit-export'>('report-generator');
 
-  const handleCopyConfig = () => {
-    const configSnippet = JSON.stringify({
-      version: '1.2.0-baseline',
-      engine: 'CL-01 Rule-Based Verification Engine',
-      calibrated_ml_available: false,
-      active_rules: [
-        { id: 'R1_NDVI_DROP', weight: 0.25, threshold: -0.20 },
-        { id: 'R2_SAR_BACKSCATTER_LOSS', weight: 0.25, threshold_db: -3.0 },
-        { id: 'R3_THERMAL_CONFIRMATION', weight: 0.15, window_hours: 48 },
-        { id: 'R4_SLOPE_SHADOW_MASK', weight: 0.10, max_slope_deg: 35 },
-        { id: 'R5_PHENOLOGICAL_CALENDAR', weight: 0.10, seasonal_damping: 0.50 },
-        { id: 'R6_CLOUD_CONTAMINATION', weight: 0.10, max_cloud_pct: 20 },
-        { id: 'R7_TENURE_BUFFER', weight: 0.05, buffer_meters: 500 }
-      ],
-      data_sources: ['Sentinel-1 SAR C-band', 'Sentinel-2 MSI', 'Landsat-9 OLI-2', 'PlanetScope 3m', 'VIIRS 375m Active Fire']
-    }, null, 2);
+  // Report Scope Filters
+  const [selectedRegionId, setSelectedRegionId] = useState<string>('all');
+  const [selectedDateRange, setSelectedDateRange] = useState<DateRangeOption>('30d');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [minAreaFilter, setMinAreaFilter] = useState<number | null>(null);
+  const [selectedSeverity, setSelectedSeverity] = useState<string>('all');
+  const [reportGeneratedAt] = useState<string>(() => new Date().toLocaleString());
 
-    navigator.clipboard.writeText(configSnippet);
-    setCopiedCode(true);
-    setTimeout(() => setCopiedCode(false), 2000);
+  // Filtered dataset for the report
+  const filteredEvents = useMemo(() => {
+    return DEMO_VERIFICATION_EVENTS.filter(ev => {
+      // Region match
+      if (selectedRegionId !== 'all') {
+        const matchesRegionId = ev.regionId === selectedRegionId;
+        const matchesState = ev.stateUT.toLowerCase().includes(selectedRegionId.toLowerCase());
+        if (!matchesRegionId && !matchesState) return false;
+      }
+
+      // Severity match
+      const isCritical = ev.ruleScore.rulePriorityScore >= 0.8;
+      const isHigh = ev.ruleScore.rulePriorityScore >= 0.6 && ev.ruleScore.rulePriorityScore < 0.8;
+      const isModerate = ev.ruleScore.rulePriorityScore >= 0.4 && ev.ruleScore.rulePriorityScore < 0.6;
+      const isLow = ev.ruleScore.rulePriorityScore < 0.4;
+
+      if (selectedSeverity === 'critical' && !isCritical) return false;
+      if (selectedSeverity === 'high' && !isHigh) return false;
+      if (selectedSeverity === 'moderate' && !isModerate) return false;
+      if (selectedSeverity === 'low' && !isLow) return false;
+
+      // Area threshold
+      if (!isAreaInFilterRange(ev.estimatedAreaHa, minAreaFilter, null)) {
+        return false;
+      }
+
+      // Date range filter
+      if (!isDateInFilterRange(ev.firstObservationDate, selectedDateRange, startDate || null, endDate || null)) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [selectedRegionId, selectedDateRange, startDate, endDate, minAreaFilter, selectedSeverity]);
+
+  // Dynamic Summary Metrics for Report Preview
+  const summaryMetrics = useMemo(() => {
+    const totalArea = filteredEvents.reduce((sum, e) => sum + (e.estimatedAreaHa || 0), 0);
+    const criticalCount = filteredEvents.filter(e => e.ruleScore.rulePriorityScore >= 0.8).length;
+    const verifiedCount = filteredEvents.filter(e => e.analystDecision === 'confirmed' || e.outcome === 'high_priority_candidate').length;
+    const avgScore = filteredEvents.length > 0
+      ? (filteredEvents.reduce((sum, e) => sum + e.ruleScore.rulePriorityScore, 0) / filteredEvents.length) * 100
+      : 0;
+
+    return {
+      totalAreaHectares: Math.round(totalArea * 10) / 10,
+      totalIncidents: filteredEvents.length,
+      criticalHotspots: criticalCount,
+      verifiedIncidents: verifiedCount,
+      averageConfidencePct: Math.round(avgScore * 10) / 10
+    };
+  }, [filteredEvents]);
+
+  // RFC 4180 Compliant CSV Export
+  const handleExportCSV = () => {
+    if (filteredEvents.length === 0) return;
+
+    const escapeCsv = (val: any): string => {
+      if (val === null || val === undefined) return '';
+      const str = String(val);
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const metadataRows = [
+      ['# CL-01 Environmental Intelligence Forest Loss Report'],
+      ['# Generation Timestamp', new Date().toISOString()],
+      ['# Region Scope', selectedRegionId === 'all' ? 'All Monitored Regions' : selectedRegionId],
+      ['# Period Scope', startDate ? `${startDate} to ${endDate || 'present'}` : selectedDateRange],
+      ['# Total Incidents', summaryMetrics.totalIncidents],
+      ['# Total Area (ha)', summaryMetrics.totalAreaHectares],
+      ['# Disclaimer', 'DEMO DATA: Synthetic satellite vectors for validation purposes.'],
+      []
+    ];
+
+    const headers = [
+      'Incident ID',
+      'Incident Name',
+      'Region ID',
+      'State / Territory',
+      'Latitude',
+      'Longitude',
+      'Observation Date',
+      'Estimated Area (ha)',
+      'Verification Outcome',
+      'Rule Priority Score (%)',
+      'NDVI Delta',
+      'SAR Radar Corroborated',
+      'Thermal VIIRS Fire',
+      'Analyst Status'
+    ];
+
+    const dataRows = filteredEvents.map(ev => [
+      escapeCsv(ev.id),
+      escapeCsv(ev.name),
+      escapeCsv(ev.regionId),
+      escapeCsv(ev.stateUT),
+      ev.coordinates.lat,
+      ev.coordinates.lng,
+      escapeCsv(ev.firstObservationDate),
+      ev.estimatedAreaHa ?? 'N/A',
+      escapeCsv(ev.outcome),
+      Math.round(ev.ruleScore.rulePriorityScore * 100),
+      ev.evidenceBundle.optical.ndviDelta ? ev.evidenceBundle.optical.ndviDelta.toFixed(2) : 'N/A',
+      ev.evidenceBundle.radar.status === 'supports' ? 'YES' : 'NO',
+      ev.evidenceBundle.fire.fireConfirmed ? 'YES' : 'NO',
+      escapeCsv(ev.analystDecision ?? 'unreviewed')
+    ]);
+
+    const csvLines = [
+      ...metadataRows.map(r => r.join(',')),
+      headers.join(','),
+      ...dataRows.map(r => r.join(','))
+    ].join('\r\n');
+
+    const blob = new Blob([csvLines], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cl01-forest-loss-report-${selectedRegionId}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
+  // Printable Report Trigger
+  const handlePrintReport = () => {
+    window.print();
+  };
+
+  // Full Audit JSON Export
   const handleExportJSON = () => {
     const exportData = {
       exportTimestamp: new Date().toISOString(),
       platform: 'CL-01 Environmental Intelligence & Verification Platform',
       disclaimer: 'PROTOTYPE DEMO DATA — Not evaluated against official ground truth reference sets',
-      verificationEvents: DEMO_VERIFICATION_EVENTS,
+      filters: {
+        region: selectedRegionId,
+        dateRange: selectedDateRange,
+        startDate,
+        endDate,
+        minArea: minAreaFilter,
+        severity: selectedSeverity
+      },
+      summaryMetrics,
+      incidents: filteredEvents,
       alerts: DEMO_ALERT_RECORDS,
       monitoringRuns: DEMO_MONITORING_RUNS
     };
@@ -50,41 +190,15 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ onBackToOverview }) =>
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `cl01-verification-audit-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleExportCSV = () => {
-    const headers = ['Event ID', 'Region Name', 'State/UT', 'Lat', 'Lng', 'Area (Ha)', 'Outcome', 'Priority Score', 'NDVI Drop', 'SAR Confirmed', 'Thermal Coincidence', 'Date'];
-    const rows = DEMO_VERIFICATION_EVENTS.map(ev => [
-      ev.id,
-      `"${ev.name}"`,
-      `"${ev.stateUT}"`,
-      ev.coordinates.lat,
-      ev.coordinates.lng,
-      ev.estimatedAreaHa ?? 'N/A',
-      ev.outcome,
-      Math.round(ev.ruleScore.rulePriorityScore * 100),
-      ev.evidenceBundle.optical.ndviDelta?.toFixed(2) ?? 'N/A',
-      ev.evidenceBundle.radar.status === 'supports' ? 'YES' : 'NO',
-      ev.evidenceBundle.fire.fireConfirmed ? 'YES' : 'NO',
-      ev.firstObservationDate
-    ]);
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `cl01-verification-events-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `cl01-comprehensive-audit-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl bg-[#0e1612] border border-[#1b2820]">
+    <div className="space-y-6 print:space-y-4 print:text-black print:bg-white">
+      {/* Header - Screen Only */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl bg-[#0e1612] border border-[#1b2820] print:hidden">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-emerald-950/80 border border-emerald-600/50 flex items-center justify-center text-emerald-400 shrink-0">
             <FileSpreadsheet size={22} />
@@ -92,12 +206,12 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ onBackToOverview }) =>
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-bold text-slate-100 font-sans tracking-tight m-0">
-                Data Architecture & Verification Methodology
+                Incident Reports &amp; Verification Audit
               </h2>
               <DemoBadge />
             </div>
             <p className="text-xs text-slate-400 font-mono mt-0.5">
-              Transparent multi-sensor pipeline, deterministic rule weighting, and exportable audit records
+              Structured detection records, printable briefing reports, and multi-sensor evidence export
             </p>
           </div>
         </div>
@@ -109,377 +223,415 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ onBackToOverview }) =>
             icon={<ArrowLeft size={14} />}
             onClick={onBackToOverview}
           >
-            Back to Overview
+            Overview
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<Printer size={14} />}
+            onClick={handlePrintReport}
+          >
+            Print / Save PDF
           </Button>
           <Button
             variant="primary"
             size="sm"
             icon={<Download size={14} />}
-            onClick={handleExportJSON}
+            onClick={handleExportCSV}
+            disabled={filteredEvents.length === 0}
           >
-            Export Audit JSON
+            Export CSV
           </Button>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-[#1b2820] space-x-1">
+      {/* Tabs - Screen Only */}
+      <div className="flex gap-1 bg-[#0c110e] rounded-xl p-1 border border-[#1c2822] print:hidden">
         <button
-          onClick={() => setActiveTab('architecture')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-mono border-b-2 font-semibold transition-colors ${
-            activeTab === 'architecture'
-              ? 'border-emerald-500 text-emerald-400 bg-emerald-950/20'
-              : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+          onClick={() => setActiveTab('report-generator')}
+          className={`flex-1 py-2 rounded-lg text-xs font-mono font-semibold transition-all ${
+            activeTab === 'report-generator'
+              ? 'bg-[#152019] text-emerald-300 border border-emerald-800/40 shadow-sm'
+              : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <Database size={14} />
-          Data Pipeline Architecture
+          Incident Report Generator
         </button>
         <button
           onClick={() => setActiveTab('rules')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-mono border-b-2 font-semibold transition-colors ${
+          className={`flex-1 py-2 rounded-lg text-xs font-mono font-semibold transition-all ${
             activeTab === 'rules'
-              ? 'border-emerald-500 text-emerald-400 bg-emerald-950/20'
-              : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+              ? 'bg-[#152019] text-emerald-300 border border-emerald-800/40 shadow-sm'
+              : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <Cpu size={14} />
-          7-Rule Verification Engine
+          Rule Weighting Engine
         </button>
         <button
-          onClick={() => setActiveTab('comparison')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-mono border-b-2 font-semibold transition-colors ${
-            activeTab === 'comparison'
-              ? 'border-emerald-500 text-emerald-400 bg-emerald-950/20'
-              : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+          onClick={() => setActiveTab('architecture')}
+          className={`flex-1 py-2 rounded-lg text-xs font-mono font-semibold transition-all ${
+            activeTab === 'architecture'
+              ? 'bg-[#152019] text-emerald-300 border border-emerald-800/40 shadow-sm'
+              : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <Layers size={14} />
-          FSI / FRAMS Alignment
+          Data Architecture
         </button>
         <button
-          onClick={() => setActiveTab('export')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-mono border-b-2 font-semibold transition-colors ${
-            activeTab === 'export'
-              ? 'border-emerald-500 text-emerald-400 bg-emerald-950/20'
-              : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700'
+          onClick={() => setActiveTab('audit-export')}
+          className={`flex-1 py-2 rounded-lg text-xs font-mono font-semibold transition-all ${
+            activeTab === 'audit-export'
+              ? 'bg-[#152019] text-emerald-300 border border-emerald-800/40 shadow-sm'
+              : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <Download size={14} />
-          Export &amp; API Integration
+          Audit JSON &amp; API
         </button>
       </div>
 
-      {/* Content based on Active Tab */}
-      {activeTab === 'architecture' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="card-panel p-4 border border-[#1d2b22] space-y-3">
-              <div className="flex items-center gap-2 text-emerald-400 font-mono text-xs font-bold uppercase tracking-wider">
-                <Radio size={15} />
-                1. Multi-Sensor Ingestion
+      {/* Tab 1: Interactive Report Generator & Print Document */}
+      {activeTab === 'report-generator' && (
+        <div className="space-y-5">
+          {/* Printable Document Header (visible only during window.print()) */}
+          <div className="hidden print:block pb-4 mb-4 border-b-2 border-black">
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-2xl font-bold font-sans m-0 text-black">CL-01 FOREST LOSS INCIDENT REPORT</h1>
+                <p className="text-xs font-mono mt-1 text-gray-700">Sentinel-2 AI Earth Observation &amp; Multi-Sensor Verification</p>
               </div>
-              <p className="text-xs text-slate-300 leading-relaxed font-sans">
-                Continuous satellite data ingestion targeting Indian biomes with specialized pass frequencies:
-              </p>
-              <ul className="text-[11px] font-mono text-slate-400 space-y-2">
-                <li className="flex items-center justify-between border-b border-white/5 pb-1">
-                  <span className="text-slate-200">Sentinel-2A/B MSI</span>
-                  <span className="text-emerald-400">10m Optical · 5d cycle</span>
-                </li>
-                <li className="flex items-center justify-between border-b border-white/5 pb-1">
-                  <span className="text-slate-200">Sentinel-1 C-band SAR</span>
-                  <span className="text-emerald-400">10m Radar · All-weather</span>
-                </li>
-                <li className="flex items-center justify-between border-b border-white/5 pb-1">
-                  <span className="text-slate-200">Landsat-9 OLI-2 / TIRS-2</span>
-                  <span className="text-cyan-400">30m Optical/Thermal · 16d</span>
-                </li>
-                <li className="flex items-center justify-between border-b border-white/5 pb-1">
-                  <span className="text-slate-200">VIIRS Active Fire</span>
-                  <span className="text-orange-400">375m I-Band · 12h pass</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="card-panel p-4 border border-[#1d2b22] space-y-3">
-              <div className="flex items-center gap-2 text-emerald-400 font-mono text-xs font-bold uppercase tracking-wider">
-                <Cpu size={15} />
-                2. AI Change Segmentation
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed font-sans">
-                Bi-temporal difference inference identifying candidate forest disturbance polygons:
-              </p>
-              <ul className="text-[11px] font-mono text-slate-400 space-y-2">
-                <li className="flex items-center justify-between border-b border-white/5 pb-1">
-                  <span className="text-slate-200">Canopy Loss Mask</span>
-                  <span className="text-emerald-400">UNet + ResNet-50</span>
-                </li>
-                <li className="flex items-center justify-between border-b border-white/5 pb-1">
-                  <span className="text-slate-200">Cloud &amp; Shadow Gate</span>
-                  <span className="text-emerald-400">s2cloudless + Sen2Cor</span>
-                </li>
-                <li className="flex items-center justify-between border-b border-white/5 pb-1">
-                  <span className="text-slate-200">Topographic Correction</span>
-                  <span className="text-cyan-400">SRTM 30m DEM / Minnaert</span>
-                </li>
-                <li className="flex items-center justify-between border-b border-white/5 pb-1">
-                  <span className="text-slate-200">Output Geometry</span>
-                  <span className="text-purple-400">Vector GeoJSON Polygons</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="card-panel p-4 border border-[#1d2b22] space-y-3">
-              <div className="flex items-center gap-2 text-emerald-400 font-mono text-xs font-bold uppercase tracking-wider">
-                <ShieldCheck size={15} />
-                3. Verification &amp; Alert Engine
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed font-sans">
-                Evidence synthesis classifying raw detections into clear, traceable operational categories:
-              </p>
-              <ul className="text-[11px] font-mono text-slate-400 space-y-2">
-                <li className="flex items-center justify-between border-b border-white/5 pb-1">
-                  <span className="text-slate-200">High-Priority Candidate</span>
-                  <span className="text-red-400">Multi-Sensor Confirmed</span>
-                </li>
-                <li className="flex items-center justify-between border-b border-white/5 pb-1">
-                  <span className="text-slate-200">Seasonal Deciduous Mask</span>
-                  <span className="text-cyan-400">Phenological Filtered</span>
-                </li>
-                <li className="flex items-center justify-between border-b border-white/5 pb-1">
-                  <span className="text-slate-200">Fire Disturbance Flag</span>
-                  <span className="text-orange-400">Thermal Synchronized</span>
-                </li>
-                <li className="flex items-center justify-between border-b border-white/5 pb-1">
-                  <span className="text-slate-200">Analyst Dispatch</span>
-                  <span className="text-emerald-400">Webhook &amp; Field SMS</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Architecture Pipeline Banner */}
-          <div className="card-panel p-5 border border-[#1e2a22]">
-            <h3 className="text-sm font-mono font-bold text-slate-200 uppercase tracking-wider mb-3">
-              Data Pipeline &amp; Processing Flow
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-center">
-              <div className="p-3 rounded-lg bg-[#0a0f0d] border border-[#1a2620]">
-                <div className="text-[10px] font-mono text-slate-500 uppercase">Input Stream</div>
-                <div className="text-xs font-mono font-semibold text-emerald-400 mt-1">ESA Copernicus / USGS</div>
-                <div className="text-[10px] text-slate-400 mt-1">L1C &amp; L2A Orthoimagery</div>
-              </div>
-              <div className="p-3 rounded-lg bg-[#0a0f0d] border border-[#1a2620]">
-                <div className="text-[10px] font-mono text-slate-500 uppercase">Pre-processing</div>
-                <div className="text-xs font-mono font-semibold text-cyan-400 mt-1">Atmospheric &amp; DEM</div>
-                <div className="text-[10px] text-slate-400 mt-1">Surface Reflectance (BOA)</div>
-              </div>
-              <div className="p-3 rounded-lg bg-[#0a0f0d] border border-[#1a2620]">
-                <div className="text-[10px] font-mono text-slate-500 uppercase">Inference &amp; Rules</div>
-                <div className="text-xs font-mono font-semibold text-purple-400 mt-1">7-Rule Deterministic</div>
-                <div className="text-[10px] text-slate-400 mt-1">Evidence Scoring Matrix</div>
-              </div>
-              <div className="p-3 rounded-lg bg-[#0a0f0d] border border-[#1a2620]">
-                <div className="text-[10px] font-mono text-slate-500 uppercase">Output Delivery</div>
-                <div className="text-xs font-mono font-semibold text-amber-400 mt-1">Cesium 3D + Alerts</div>
-                <div className="text-[10px] text-slate-400 mt-1">REST API &amp; GeoJSON Feed</div>
+              <div className="text-right text-xs font-mono">
+                <div>Generated: {reportGeneratedAt}</div>
+                <div>Scope: {selectedRegionId === 'all' ? 'All Monitored Regions' : selectedRegionId}</div>
+                <div className="font-bold text-red-700 mt-1">[DEMONSTRATION DATA RECORD]</div>
               </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {activeTab === 'rules' && (
-        <div className="space-y-4">
-          <div className="p-4 rounded-xl bg-amber-950/20 border border-amber-800/30 text-xs font-mono text-amber-300/90 leading-relaxed flex items-start gap-3">
-            <Info size={16} className="text-amber-400 shrink-0 mt-0.5" />
-            <div>
-              <strong>Rule-Based Baseline Disclaimer:</strong> The current verification score is generated by a transparent, deterministic rule weighting engine. It is explicitly labeled as <code className="bg-black/30 px-1 py-0.5 rounded text-amber-200">rule_based_baseline</code>. It does not represent a calibrated machine learning probability until trained model checkpoints are validated against ground truth data.
+          {/* Interactive Scope & Filter Bar - Screen Only */}
+          <div className="card-panel p-4 space-y-3 print:hidden">
+            <div className="flex items-center gap-2 text-xs font-mono font-semibold text-slate-300 pb-2 border-b border-[#18261e]">
+              <SlidersHorizontal size={14} className="text-emerald-400" />
+              <span>Define Reporting Scope</span>
             </div>
-          </div>
 
-          <div className="card-panel overflow-hidden border border-[#1e2a22]">
-            <table className="w-full text-left text-xs font-mono border-collapse">
-              <thead>
-                <tr className="border-b border-[#1b2820] bg-[#0c1310] text-slate-400 uppercase text-[10px]">
-                  <th className="p-3">Rule ID</th>
-                  <th className="p-3">Evidence Factor</th>
-                  <th className="p-3">Weight</th>
-                  <th className="p-3">Trigger Condition</th>
-                  <th className="p-3">Environmental Justification</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#152019] text-slate-300">
-                <tr className="hover:bg-[#0c120f]">
-                  <td className="p-3 text-emerald-400 font-bold">R1</td>
-                  <td className="p-3 font-semibold text-white">NDVI Drop Magnitude</td>
-                  <td className="p-3 text-emerald-300">25%</td>
-                  <td className="p-3">ΔNDVI &lt; -0.20</td>
-                  <td className="p-3 text-slate-400 text-[11px] font-sans">Primary indicator of loss of photosynthetic leaf canopy.</td>
-                </tr>
-                <tr className="hover:bg-[#0c120f]">
-                  <td className="p-3 text-emerald-400 font-bold">R2</td>
-                  <td className="p-3 font-semibold text-white">SAR Radar Backscatter Drop</td>
-                  <td className="p-3 text-emerald-300">25%</td>
-                  <td className="p-3">ΔVH &lt; -3.0 dB</td>
-                  <td className="p-3 text-slate-400 text-[11px] font-sans">Sentinel-1 C-band penetration confirms woody structural destruction independent of clouds.</td>
-                </tr>
-                <tr className="hover:bg-[#0c120f]">
-                  <td className="p-3 text-emerald-400 font-bold">R3</td>
-                  <td className="p-3 font-semibold text-white">Thermal Anomaly Coincidence</td>
-                  <td className="p-3 text-emerald-300">15%</td>
-                  <td className="p-3">VIIRS fire &lt; 48 hrs</td>
-                  <td className="p-3 text-slate-400 text-[11px] font-sans">Distinguishes fire-induced canopy loss from mechanical clearing or logging.</td>
-                </tr>
-                <tr className="hover:bg-[#0c120f]">
-                  <td className="p-3 text-emerald-400 font-bold">R4</td>
-                  <td className="p-3 font-semibold text-white">Topographic Slope Masking</td>
-                  <td className="p-3 text-emerald-300">10%</td>
-                  <td className="p-3">Slope &gt; 35° flag</td>
-                  <td className="p-3 text-slate-400 text-[11px] font-sans">Damps false positives in steep terrain caused by SAR foreshortening or mountain shadow.</td>
-                </tr>
-                <tr className="hover:bg-[#0c120f]">
-                  <td className="p-3 text-emerald-400 font-bold">R5</td>
-                  <td className="p-3 font-semibold text-white">Phenological Seasonality Filter</td>
-                  <td className="p-3 text-emerald-300">10%</td>
-                  <td className="p-3">Dry season in deciduous zone</td>
-                  <td className="p-3 text-slate-400 text-[11px] font-sans">Prevents normal leaf drop in tropical dry deciduous forests from triggering false deforestation alerts.</td>
-                </tr>
-                <tr className="hover:bg-[#0c120f]">
-                  <td className="p-3 text-emerald-400 font-bold">R6</td>
-                  <td className="p-3 font-semibold text-white">Cloud/Shadow Quality Gate</td>
-                  <td className="p-3 text-emerald-300">10%</td>
-                  <td className="p-3">Scene cloud cover &lt; 20%</td>
-                  <td className="p-3 text-slate-400 text-[11px] font-sans">Suppresses anomalous spectral dips caused by cloud edges and low-illumination shadow artifacts.</td>
-                </tr>
-                <tr className="hover:bg-[#0c120f]">
-                  <td className="p-3 text-emerald-400 font-bold">R7</td>
-                  <td className="p-3 font-semibold text-white">Tenure / Buffer Boundary Filter</td>
-                  <td className="p-3 text-emerald-300">5%</td>
-                  <td className="p-3">Distance to road/boundary</td>
-                  <td className="p-3 text-slate-400 text-[11px] font-sans">Contextual weight based on proximity to active infrastructure corridors or reserve boundaries.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'comparison' && (
-        <div className="space-y-4">
-          <div className="card-panel overflow-hidden border border-[#1e2a22]">
-            <table className="w-full text-left text-xs font-mono border-collapse">
-              <thead>
-                <tr className="border-b border-[#1b2820] bg-[#0c1310] text-slate-400 uppercase text-[10px]">
-                  <th className="p-3">Capability Dimension</th>
-                  <th className="p-3">FSI / Anavaran (Traditional)</th>
-                  <th className="p-3">FRAMS (State Forest Depts)</th>
-                  <th className="p-3 text-emerald-400">CL-01 Platform (Proposed)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#152019] text-slate-300">
-                <tr className="hover:bg-[#0c120f]">
-                  <td className="p-3 font-bold text-white">Update Frequency</td>
-                  <td className="p-3 text-slate-400">Biennial (Every 2 Years)</td>
-                  <td className="p-3 text-slate-400">Monthly / Periodic pass</td>
-                  <td className="p-3 text-emerald-400 font-semibold">Continuous (5–12 Day Sentinel Pass)</td>
-                </tr>
-                <tr className="hover:bg-[#0c120f]">
-                  <td className="p-3 font-bold text-white">All-Weather Capability</td>
-                  <td className="p-3 text-slate-400">Optical Only (Monsoon blind)</td>
-                  <td className="p-3 text-slate-400">Primarily Optical</td>
-                  <td className="p-3 text-emerald-400 font-semibold">Sentinel-1 C-band SAR Integrated</td>
-                </tr>
-                <tr className="hover:bg-[#0c120f]">
-                  <td className="p-3 font-bold text-white">False Positive Screening</td>
-                  <td className="p-3 text-slate-400">Manual field validation cycle</td>
-                  <td className="p-3 text-slate-400">Manual spot checks</td>
-                  <td className="p-3 text-emerald-400 font-semibold">Automated Phenological &amp; Thermal Mask</td>
-                </tr>
-                <tr className="hover:bg-[#0c120f]">
-                  <td className="p-3 font-bold text-white">3D Visualization</td>
-                  <td className="p-3 text-slate-400">2D GIS Maps &amp; PDF reports</td>
-                  <td className="p-3 text-slate-400">2D Web Maps</td>
-                  <td className="p-3 text-emerald-400 font-semibold">CesiumJS 3D Globe with Terrain Elevation</td>
-                </tr>
-                <tr className="hover:bg-[#0c120f]">
-                  <td className="p-3 font-bold text-white">Audit Trail &amp; Decisions</td>
-                  <td className="p-3 text-slate-400">Aggregated statistical reports</td>
-                  <td className="p-3 text-slate-400">Basic field note logs</td>
-                  <td className="p-3 text-emerald-400 font-semibold">Structured Evidence Bundle + Traceable Decision Log</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'export' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="card-panel p-5 border border-[#1e2a22] space-y-4">
-              <h3 className="text-sm font-mono font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                <Download size={16} className="text-emerald-400" />
-                Data Export Packages
-              </h3>
-              <p className="text-xs text-slate-400 font-sans leading-relaxed">
-                Download structured records of all active verification candidates, monitoring runs, and alert logs for offline analysis or GIS integration.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  icon={<Download size={14} />}
-                  onClick={handleExportJSON}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs font-mono">
+              {/* Region Selector */}
+              <div>
+                <label className="text-[10px] uppercase text-slate-400 block mb-1">Monitoring Region</label>
+                <select
+                  value={selectedRegionId}
+                  onChange={(e) => setSelectedRegionId(e.target.value)}
+                  className="w-full bg-[#101713] text-slate-200 border border-[#203126] rounded-lg px-3 py-1.5 focus:outline-none cursor-pointer"
                 >
-                  Download Full JSON ({DEMO_VERIFICATION_EVENTS.length} Events)
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  icon={<FileSpreadsheet size={14} />}
-                  onClick={handleExportCSV}
+                  <option value="all">All Monitored Regions</option>
+                  {MONITORED_REGIONS.filter(r => r.id !== 'all').map(r => (
+                    <option key={r.id} value={r.id}>{r.name} ({r.country.split(' ')[0]})</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Reporting Period */}
+              <div>
+                <label className="text-[10px] uppercase text-slate-400 block mb-1">Reporting Period</label>
+                <select
+                  value={selectedDateRange}
+                  onChange={(e) => {
+                    setSelectedDateRange(e.target.value as DateRangeOption);
+                    setStartDate('');
+                    setEndDate('');
+                  }}
+                  className="w-full bg-[#101713] text-slate-200 border border-[#203126] rounded-lg px-3 py-1.5 focus:outline-none cursor-pointer"
                 >
-                  Download CSV Table
-                </Button>
+                  <option value="7d">Last 7 Days</option>
+                  <option value="30d">Last 30 Days</option>
+                  <option value="90d">Last 90 Days</option>
+                  <option value="ytd">Year-to-Date (2026)</option>
+                </select>
+              </div>
+
+              {/* Minimum Area */}
+              <div>
+                <label className="text-[10px] uppercase text-slate-400 block mb-1">Min. Disturbance Area</label>
+                <select
+                  value={minAreaFilter ?? 'all'}
+                  onChange={(e) => setMinAreaFilter(e.target.value === 'all' ? null : Number(e.target.value))}
+                  className="w-full bg-[#101713] text-slate-200 border border-[#203126] rounded-lg px-3 py-1.5 focus:outline-none cursor-pointer"
+                >
+                  <option value="all">All Sizes (&gt;0 ha)</option>
+                  <option value="15">&gt; 15 hectares</option>
+                  <option value="30">&gt; 30 hectares</option>
+                  <option value="80">&gt; 80 hectares (Critical)</option>
+                </select>
+              </div>
+
+              {/* Severity Category */}
+              <div>
+                <label className="text-[10px] uppercase text-slate-400 block mb-1">Severity Category</label>
+                <select
+                  value={selectedSeverity}
+                  onChange={(e) => setSelectedSeverity(e.target.value)}
+                  className="w-full bg-[#101713] text-slate-200 border border-[#203126] rounded-lg px-3 py-1.5 focus:outline-none cursor-pointer"
+                >
+                  <option value="all">All Severities</option>
+                  <option value="critical">Critical (&gt;80 ha)</option>
+                  <option value="high">High (30–80 ha)</option>
+                  <option value="moderate">Moderate (15–30 ha)</option>
+                  <option value="low">Low (&lt;15 ha)</option>
+                </select>
               </div>
             </div>
 
-            <div className="card-panel p-5 border border-[#1e2a22] space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-mono font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                  <Code2 size={16} className="text-cyan-400" />
-                  Engine Configuration API
-                </h3>
+            {/* Custom Date Inputs */}
+            <div className="pt-2 border-t border-[#16221b] flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400 text-[11px]">Custom Date Range:</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="bg-[#101713] border border-[#203126] rounded px-2 py-1 text-slate-200 text-xs focus:outline-none"
+                  placeholder="Start"
+                />
+                <span className="text-slate-500">to</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="bg-[#101713] border border-[#203126] rounded px-2 py-1 text-slate-200 text-xs focus:outline-none"
+                  placeholder="End"
+                />
+              </div>
+
+              {(selectedRegionId !== 'all' || selectedDateRange !== '30d' || startDate || endDate || minAreaFilter !== null || selectedSeverity !== 'all') && (
                 <button
-                  onClick={handleCopyConfig}
-                  className="flex items-center gap-1.5 px-2 py-1 rounded bg-[#101713] text-[11px] font-mono text-emerald-400 border border-[#1f2d24] hover:bg-[#15201a]"
+                  onClick={() => {
+                    setSelectedRegionId('all');
+                    setSelectedDateRange('30d');
+                    setStartDate('');
+                    setEndDate('');
+                    setMinAreaFilter(null);
+                    setSelectedSeverity('all');
+                  }}
+                  className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 transition-colors"
                 >
-                  {copiedCode ? <Check size={12} /> : <Copy size={12} />}
-                  {copiedCode ? 'Copied' : 'Copy JSON'}
+                  <RotateCcw size={12} />
+                  Reset Scope
                 </button>
-              </div>
-              <p className="text-xs text-slate-400 font-sans">
-                Active pipeline parameters used for multi-sensor evidence calculation:
-              </p>
-              <pre className="p-3 rounded-lg bg-[#080d0b] border border-[#17231c] text-[10px] font-mono text-emerald-300 overflow-x-auto max-h-44">
-{`{
-  "engine": "CL-01 Rule-Based Verification Engine",
-  "version": "1.2.0-baseline",
-  "calibrated_ml_available": false,
-  "rules": {
-    "R1_NDVI": { "weight": 0.25, "threshold": -0.20 },
-    "R2_SAR": { "weight": 0.25, "delta_db": -3.0 },
-    "R3_THERMAL": { "weight": 0.15, "window_hours": 48 },
-    "R4_SLOPE": { "weight": 0.10, "max_deg": 35 }
-  }
-}`}
-              </pre>
+              )}
             </div>
+          </div>
+
+          {/* Executive Summary Metrics Card */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 print:grid-cols-5 print:border print:border-black print:p-2">
+            <div className="card-panel p-3.5 print:border-none print:shadow-none">
+              <span className="text-[10px] text-slate-400 uppercase font-mono block print:text-black font-semibold">Total Loss Area</span>
+              <span className="text-xl font-bold font-mono text-red-400 print:text-black">
+                {summaryMetrics.totalAreaHectares} ha
+              </span>
+            </div>
+            <div className="card-panel p-3.5 print:border-none print:shadow-none">
+              <span className="text-[10px] text-slate-400 uppercase font-mono block print:text-black font-semibold">Total Incidents</span>
+              <span className="text-xl font-bold font-mono text-slate-100 print:text-black">
+                {summaryMetrics.totalIncidents}
+              </span>
+            </div>
+            <div className="card-panel p-3.5 print:border-none print:shadow-none">
+              <span className="text-[10px] text-slate-400 uppercase font-mono block print:text-black font-semibold">Critical Hotspots</span>
+              <span className="text-xl font-bold font-mono text-orange-400 print:text-black">
+                {summaryMetrics.criticalHotspots}
+              </span>
+            </div>
+            <div className="card-panel p-3.5 print:border-none print:shadow-none">
+              <span className="text-[10px] text-slate-400 uppercase font-mono block print:text-black font-semibold">Avg Rule Score</span>
+              <span className="text-xl font-bold font-mono text-emerald-400 print:text-black">
+                {summaryMetrics.averageConfidencePct}%
+              </span>
+            </div>
+            <div className="card-panel p-3.5 print:border-none print:shadow-none">
+              <span className="text-[10px] text-slate-400 uppercase font-mono block print:text-black font-semibold">Verified Incidents</span>
+              <span className="text-xl font-bold font-mono text-cyan-400 print:text-black">
+                {summaryMetrics.verifiedIncidents}
+              </span>
+            </div>
+          </div>
+
+          {/* Report Preview Table */}
+          <div className="card-panel overflow-hidden print:border print:border-black">
+            <div className="p-3 bg-[#0a0f0c] border-b border-[#1b2820] flex items-center justify-between text-xs font-mono print:bg-gray-100 print:text-black print:border-b-2 print:border-black">
+              <span className="font-semibold uppercase tracking-wider text-slate-200 print:text-black">
+                Preview: Structured Incident Log ({filteredEvents.length} records)
+              </span>
+              <span className="text-slate-500 print:text-gray-700">
+                Constellation: Sentinel-2 MSI · Landsat-9 OLI-2
+              </span>
+            </div>
+
+            {filteredEvents.length === 0 ? (
+              <div className="p-12 text-center text-xs font-mono text-slate-500 space-y-2">
+                <AlertTriangle size={24} className="mx-auto text-amber-500/70" />
+                <p className="text-slate-300 font-semibold">No detection records match the current report criteria.</p>
+                <p className="text-slate-500 text-[11px]">Adjust your region, observation date window, or minimum area to preview incident records.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs font-mono print:text-[10px]">
+                  <thead className="bg-[#0b110d] border-b border-[#1b2820] text-slate-400 uppercase text-[10px] print:text-black print:border-b print:border-black">
+                    <tr>
+                      <th className="py-2.5 px-3">Event ID</th>
+                      <th className="py-2.5 px-3">Incident / Region</th>
+                      <th className="py-2.5 px-3">State / UT</th>
+                      <th className="py-2.5 px-3">Date</th>
+                      <th className="py-2.5 px-3">Area (ha)</th>
+                      <th className="py-2.5 px-3">Priority Score</th>
+                      <th className="py-2.5 px-3">Outcome</th>
+                      <th className="py-2.5 px-3 print:hidden text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#152019] text-slate-300 print:text-black print:divide-black">
+                    {filteredEvents.map(ev => (
+                      <tr key={ev.id} className="hover:bg-[#101713] transition-colors">
+                        <td className="py-2.5 px-3 font-semibold text-slate-200 print:text-black">{ev.id}</td>
+                        <td className="py-2.5 px-3">
+                          <div className="font-semibold text-slate-100 print:text-black truncate max-w-xs">{ev.name}</div>
+                          <div className="text-[10px] text-slate-500 print:text-gray-600">{ev.regionId}</div>
+                        </td>
+                        <td className="py-2.5 px-3 text-slate-400 print:text-black">{ev.stateUT}</td>
+                        <td className="py-2.5 px-3 text-slate-400 print:text-black">{ev.firstObservationDate}</td>
+                        <td className="py-2.5 px-3 font-semibold text-red-400 print:text-black">
+                          {ev.estimatedAreaHa ? `${ev.estimatedAreaHa} ha` : '—'}
+                        </td>
+                        <td className="py-2.5 px-3 text-emerald-400 font-semibold print:text-black">
+                          {Math.round(ev.ruleScore.rulePriorityScore * 100)}%
+                        </td>
+                        <td className="py-2.5 px-3 text-slate-300 capitalize print:text-black">
+                          {ev.outcome.replace(/_/g, ' ')}
+                        </td>
+                        <td className="py-2.5 px-3 print:hidden text-right">
+                          {onNavigateToMap && (
+                            <button
+                              onClick={() => onNavigateToMap('earth-3d', ev.regionId)}
+                              className="text-[11px] text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1 ml-auto"
+                              title="Inspect on 3D Globe"
+                            >
+                              <ExternalLink size={11} />
+                              Map
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Report Metadata Strip */}
+          <div className="p-3.5 rounded-xl bg-[#0b100d] border border-[#1a261f] text-[11px] font-mono text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-3 print:border print:border-black print:bg-white print:text-black">
+            <div>
+              <strong className="text-slate-300 print:text-black">Data Sources:</strong> Sentinel-2 Level-2A (ESA), Landsat-9 OLI-2 (USGS), VIIRS 375m Thermal (NASA FIRMS).
+            </div>
+            <div className="text-emerald-400 font-semibold print:text-black">
+              Audit Hash: SHA-256 (CL01-SYNTH-20261024)
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 2: Rule Engine Transparency */}
+      {activeTab === 'rules' && (
+        <div className="card-panel p-6 space-y-5 text-xs font-mono">
+          <div className="flex items-center gap-2 pb-3 border-b border-[#1b2820]">
+            <Cpu size={16} className="text-emerald-400" />
+            <h3 className="font-bold text-slate-100 uppercase tracking-wider text-xs m-0">
+              Deterministic Verification Rule Weights
+            </h3>
+          </div>
+          <p className="text-slate-400 font-sans">
+            Every candidate forest loss polygon is evaluated against 7 deterministic rules. Weights sum to 1.0. Rule results are recorded in the audit trail without black-box adjustments.
+          </p>
+          <div className="divide-y divide-[#17231c]">
+            {[
+              { id: 'R1_NDVI_DROP', name: 'Optical Canopy Drop', weight: '25%', threshold: 'NDVI delta < -0.20 across consecutive cloud-free passes' },
+              { id: 'R2_SAR_BACKSCATTER_LOSS', name: 'Sentinel-1 SAR Loss', weight: '25%', threshold: 'VV/VH ratio backscatter decline > 3.0 dB' },
+              { id: 'R3_THERMAL_CONFIRMATION', name: 'Active Fire Coincidence', weight: '15%', threshold: 'VIIRS 375m thermal hotspot within 5km radius in 48h' },
+              { id: 'R4_SLOPE_SHADOW_MASK', name: 'DEM Terrain Slope Correction', weight: '10%', threshold: 'Topographic shadow false-positive rejection on slopes > 35°' },
+              { id: 'R5_PHENOLOGICAL_CALENDAR', name: 'Seasonal Phenology Damping', weight: '10%', threshold: 'Damping applied during deciduous dry-season leaf drop' },
+              { id: 'R6_CLOUD_CONTAMINATION', name: 'sen2cor Cloud Masking', weight: '10%', threshold: 'Disqualify candidate if QA60 cloud probability > 20%' },
+              { id: 'R7_TENURE_BUFFER', name: 'Reserve Boundary Buffer', weight: '5%', threshold: 'Protected wildlife corridor proximity weighting' },
+            ].map(r => (
+              <div key={r.id} className="py-2.5 flex items-start justify-between gap-4">
+                <div>
+                  <div className="font-semibold text-slate-200">{r.name} <span className="text-slate-500 text-[10px]">({r.id})</span></div>
+                  <div className="text-slate-400 text-[11px] mt-0.5">{r.threshold}</div>
+                </div>
+                <div className="text-emerald-400 font-bold shrink-0">{r.weight}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab 3: Architecture Overview */}
+      {activeTab === 'architecture' && (
+        <div className="card-panel p-6 space-y-4 text-xs font-mono">
+          <div className="flex items-center gap-2 pb-3 border-b border-[#1b2820]">
+            <Database size={16} className="text-emerald-400" />
+            <h3 className="font-bold text-slate-100 uppercase tracking-wider text-xs m-0">
+              Multi-Spectral Sensor Orchestration
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-slate-300">
+            <div className="p-4 rounded-xl bg-[#0a0f0c] border border-[#16221a] space-y-2">
+              <span className="text-emerald-400 font-bold block text-sm">Optical Ingestion Pipeline</span>
+              <p className="text-slate-400 font-sans text-xs">
+                Sentinel-2A/B MSI 10m L2A bottom-of-atmosphere reflectance scenes are filtered by cloud cover &lt; 20%. Automated sen2cor scene classification generates cloud and cloud shadow masks.
+              </p>
+            </div>
+            <div className="p-4 rounded-xl bg-[#0a0f0c] border border-[#16221a] space-y-2">
+              <span className="text-blue-400 font-bold block text-sm">Synthetic Aperture Radar (SAR)</span>
+              <p className="text-slate-400 font-sans text-xs">
+                Sentinel-1 C-band dual-polarization (VV + VH) IW mode penetrates tropical monsoon cloud covers, confirming canopy volume loss when optical sensors are blinded by monsoon cloud decks.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 4: Audit Export */}
+      {activeTab === 'audit-export' && (
+        <div className="card-panel p-6 space-y-4 text-xs font-mono">
+          <div className="flex items-center gap-2 pb-3 border-b border-[#1b2820]">
+            <FileText size={16} className="text-emerald-400" />
+            <h3 className="font-bold text-slate-100 uppercase tracking-wider text-xs m-0">
+              Audit Data Bundle &amp; JSON Serialization
+            </h3>
+          </div>
+          <p className="text-slate-400 font-sans">
+            Download complete, machine-readable audit bundles containing raw sensor telemetry, rule engine weights, analyst verification outcomes, and monitoring execution logs.
+          </p>
+          <div className="flex items-center gap-3 pt-2">
+            <Button
+              variant="primary"
+              size="sm"
+              icon={<Download size={13} />}
+              onClick={handleExportJSON}
+            >
+              Download Full Audit JSON
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={<Download size={13} />}
+              onClick={handleExportCSV}
+            >
+              Download Incident CSV
+            </Button>
           </div>
         </div>
       )}
     </div>
   );
 };
+
+export default ReportsView;

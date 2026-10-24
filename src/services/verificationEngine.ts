@@ -334,6 +334,7 @@ export function generateAlertFromEvent(event: VerificationEvent): AlertRecord | 
     generatedAt: new Date().toISOString(),
     acknowledgedAt: null,
     resolvedAt: null,
+    confidence: event.ruleScore.rulePriorityScore,
     isDuplicate: false,
     parentAlertId: null,
     notificationChannels: ['dashboard'],

@@ -201,10 +201,22 @@ export function App() {
           ) : activePage === 'alerts' ? (
             <AlertsView
               onBackToOverview={() => setActivePage('overview')}
+              onNavigateToMap={(targetPage, regionId) => {
+                if (regionId) {
+                  handleFilterChange({ selectedRegionId: regionId });
+                }
+                setActivePage(targetPage);
+              }}
             />
           ) : activePage === 'reports' ? (
             <ReportsView
               onBackToOverview={() => setActivePage('overview')}
+              onNavigateToMap={(targetPage, regionId) => {
+                if (regionId) {
+                  handleFilterChange({ selectedRegionId: regionId });
+                }
+                setActivePage(targetPage);
+              }}
             />
           ) : (
             <PlaceholderView
