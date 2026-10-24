@@ -27,8 +27,13 @@ import {
 } from 'lucide-react';
 import { DemoBadge } from '../common/Badge';
 
+import type { GlobalFilterState } from '../../types/layersAndFilters';
+
 interface ForestLossDetectionViewProps {
   onBackToOverview: () => void;
+  filters?: GlobalFilterState;
+  onFilterChange?: (updates: Partial<GlobalFilterState>) => void;
+  onClearFilters?: () => void;
 }
 
 const REGION_OPTIONS = [
@@ -73,16 +78,30 @@ const classificationIcon: Record<ChangeClassification, React.ReactNode> = {
 };
 
 export const ForestLossDetectionView: React.FC<ForestLossDetectionViewProps> = ({
-  onBackToOverview
+  onBackToOverview,
+  filters: propFilters,
+  onFilterChange: propOnFilterChange,
+  onClearFilters: propOnClearFilters
 }) => {
-  const [filters, setFilters] = useState<DetectionFilterState>({
-    regionId: 'all',
-    period: 'all',
-    severity: 'all',
+  const [localFilters, setLocalFilters] = useState<DetectionFilterState>({
+    regionId: propFilters?.selectedRegionId || 'all',
+    period: (propFilters?.dateRange as any) || 'all',
+    severity: (propFilters?.selectedSeverity as any) || 'all',
     classification: 'all',
     minConfidence: 0,
-    searchQuery: '',
+    searchQuery: propFilters?.searchQuery || '',
   });
+
+  const filters: DetectionFilterState = useMemo(() => {
+    return {
+      regionId: propFilters?.selectedRegionId || localFilters.regionId,
+      period: (propFilters?.dateRange as any) || localFilters.period,
+      severity: (propFilters?.selectedSeverity as any) || localFilters.severity,
+      classification: localFilters.classification,
+      minConfidence: localFilters.minConfidence,
+      searchQuery: propFilters?.searchQuery !== undefined ? propFilters.searchQuery : localFilters.searchQuery,
+    };
+  }, [propFilters, localFilters]);
 
   const [selectedDetection, setSelectedDetection] = useState<DetectionPolygonResult | null>(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -93,8 +112,31 @@ export const ForestLossDetectionView: React.FC<ForestLossDetectionViewProps> = (
   const currentRegionLabel = REGION_OPTIONS.find(r => r.value === filters.regionId)?.label ?? 'All Regions';
 
   const updateFilter = (partial: Partial<DetectionFilterState>) => {
-    setFilters(prev => ({ ...prev, ...partial }));
+    setLocalFilters(prev => ({ ...prev, ...partial }));
     setSelectedDetection(null);
+    if (propOnFilterChange) {
+      const updates: Partial<GlobalFilterState> = {};
+      if (partial.regionId !== undefined) updates.selectedRegionId = partial.regionId;
+      if (partial.period !== undefined && partial.period !== 'all') updates.dateRange = partial.period as any;
+      if (partial.severity !== undefined) updates.selectedSeverity = partial.severity;
+      if (partial.searchQuery !== undefined) updates.searchQuery = partial.searchQuery;
+      propOnFilterChange(updates);
+    }
+  };
+
+  const handleResetFilters = () => {
+    setLocalFilters({
+      regionId: 'all',
+      period: 'all',
+      severity: 'all',
+      classification: 'all',
+      minConfidence: 0,
+      searchQuery: '',
+    });
+    setSelectedDetection(null);
+    if (propOnClearFilters) {
+      propOnClearFilters();
+    }
   };
 
   return (
@@ -202,12 +244,12 @@ export const ForestLossDetectionView: React.FC<ForestLossDetectionViewProps> = (
             <span className="text-xs font-mono text-emerald-400 font-semibold w-12 text-right">
               ≥{filters.minConfidence}%
             </span>
-            {(filters.minConfidence > 0 || filters.searchQuery || filters.regionId !== 'all' || filters.severity !== 'all' || filters.classification !== 'all') && (
+            {(filters.minConfidence > 0 || !!filters.searchQuery || filters.regionId !== 'all' || filters.severity !== 'all' || filters.classification !== 'all') && (
               <button
-                onClick={() => updateFilter({ regionId: 'all', period: 'all', severity: 'all', classification: 'all', minConfidence: 0, searchQuery: '' })}
+                onClick={handleResetFilters}
                 className="flex items-center gap-1 text-xs font-mono text-slate-400 hover:text-slate-200 border border-[#203126] rounded px-2 py-1 hover:border-slate-500 transition-colors shrink-0"
               >
-                <X size={11} /> Reset
+                <X size={11} /> Clear Filters
               </button>
             )}
           </div>

@@ -33,6 +33,8 @@ import type {
   ForestCoverGeoJsonProperties
 } from '../../data/geoJsonData';
 import { LoadingState, ErrorState } from '../common/StateViews';
+import type { DateRangeOption } from '../../types/monitoring';
+import { isDateInFilterRange, isAreaInFilterRange, isSeverityMatch } from '../../types/layersAndFilters';
 
 interface CesiumEarthViewerProps {
   showForestCover?: boolean;
@@ -44,6 +46,8 @@ interface CesiumEarthViewerProps {
   minAreaHa?: number | null;
   maxAreaHa?: number | null;
   dateRange?: string;
+  startDate?: string | null;
+  endDate?: string | null;
   activePreset: CameraPreset;
   isAutoRotating: boolean;
   onSelectLossRegion: (props: ForestLossGeoJsonProperties | null) => void;
@@ -61,6 +65,8 @@ export const CesiumEarthViewer: React.FC<CesiumEarthViewerProps> = ({
   minAreaHa = null,
   maxAreaHa = null,
   dateRange = '30d',
+  startDate = null,
+  endDate = null,
   activePreset,
   isAutoRotating,
   onSelectLossRegion,
@@ -381,23 +387,14 @@ export const CesiumEarthViewer: React.FC<CesiumEarthViewerProps> = ({
       if (!props) return true;
 
       // Severity filter
-      if (selectedSeverity && selectedSeverity !== 'all') {
-        if (props.severity !== selectedSeverity) return false;
-      }
+      if (!isSeverityMatch(props.severity, selectedSeverity)) return false;
 
       // Minimum & maximum area filter
-      const area = props.areaHectares ?? 0;
-      if (minAreaHa !== null && minAreaHa !== undefined && area < minAreaHa) return false;
-      if (maxAreaHa !== null && maxAreaHa !== undefined && area > maxAreaHa) return false;
+      if (!isAreaInFilterRange(props.areaHectares, minAreaHa, maxAreaHa)) return false;
 
       // Date range filter
-      if (dateRange && props.detectedDate) {
-        const itemDate = new Date(props.detectedDate).getTime();
-        const refDate = new Date('2026-10-24').getTime();
-        const diffDays = (refDate - itemDate) / (1000 * 60 * 60 * 24);
-        if (dateRange === '7d' && diffDays > 7) return false;
-        if (dateRange === '30d' && diffDays > 30) return false;
-        if (dateRange === '90d' && diffDays > 90) return false;
+      if (!isDateInFilterRange(props.detectedDate, dateRange as DateRangeOption, startDate, endDate)) {
+        return false;
       }
 
       return true;
@@ -410,7 +407,7 @@ export const CesiumEarthViewer: React.FC<CesiumEarthViewerProps> = ({
     pinsDataSourceRef.current.entities.values.forEach(entity => {
       entity.show = filterEntity(entity);
     });
-  }, [selectedSeverity, minAreaHa, maxAreaHa, dateRange]);
+  }, [selectedSeverity, minAreaHa, maxAreaHa, dateRange, startDate, endDate]);
 
   // Camera fly-to when active preset changes
   useEffect(() => {

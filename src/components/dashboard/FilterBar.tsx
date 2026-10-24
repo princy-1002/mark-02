@@ -1,10 +1,12 @@
 import React from 'react';
 import type { DateRangeOption, FilterState } from '../../types/monitoring';
+import type { GlobalFilterState } from '../../types/layersAndFilters';
+import { getActiveFilterCount } from '../../types/layersAndFilters';
 import { Calendar, RotateCcw, AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface FilterBarProps {
-  filters: FilterState;
-  onFilterChange: (updates: Partial<FilterState>) => void;
+  filters: GlobalFilterState | FilterState;
+  onFilterChange: (updates: Partial<GlobalFilterState>) => void;
   onResetFilters: () => void;
   isLoading: boolean;
   onToggleLoading: () => void;
@@ -29,6 +31,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     { id: '90d', label: '90 Days' },
     { id: 'ytd', label: 'Year-to-Date' }
   ];
+
+  const activeCount = 'layers' in filters ? getActiveFilterCount(filters as GlobalFilterState) : 0;
+  const isFiltered = activeCount > 0 || filters.selectedSeverity !== 'all' || filters.selectedStatus !== 'all' || !!filters.searchQuery || filters.selectedRegionId !== 'all';
 
   return (
     <div className="card-panel p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
@@ -93,14 +98,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         </div>
 
         {/* Reset Filters button */}
-        {(filters.selectedSeverity !== 'all' || filters.selectedStatus !== 'all' || filters.searchQuery || filters.selectedRegionId !== 'all') && (
+        {isFiltered && (
           <button
             onClick={onResetFilters}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#16221b] border border-[#23352a] text-slate-300 hover:text-white hover:bg-[#1a2920] transition-colors"
             title="Reset active filters"
           >
             <RotateCcw size={12} />
-            <span>Reset ({totalFilteredCount})</span>
+            <span>Clear Filters ({totalFilteredCount})</span>
           </button>
         )}
       </div>

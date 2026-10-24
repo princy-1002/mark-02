@@ -15,6 +15,8 @@ import type {
   FilterState, 
   DateRangeOption 
 } from '../types/monitoring';
+import type { GlobalFilterState } from '../types/layersAndFilters';
+import { isDateInFilterRange, isAreaInFilterRange } from '../types/layersAndFilters';
 
 export class MonitoringService {
   /**
@@ -35,7 +37,9 @@ export class MonitoringService {
   /**
    * Filters forest loss events based on full filter state
    */
-  static getFilteredEvents(filters: FilterState): ForestLossEvent[] {
+  static getFilteredEvents(filters: GlobalFilterState | FilterState): ForestLossEvent[] {
+    const globalFilters = filters as Partial<GlobalFilterState>;
+
     return DEMO_FOREST_LOSS_EVENTS.filter(event => {
       // Region match
       if (filters.selectedRegionId && filters.selectedRegionId !== 'all') {
@@ -56,6 +60,16 @@ export class MonitoringService {
         if (event.status !== filters.selectedStatus) {
           return false;
         }
+      }
+
+      // Area range match (min / max ha)
+      if (!isAreaInFilterRange(event.areaHectares, globalFilters.minAreaHa, globalFilters.maxAreaHa)) {
+        return false;
+      }
+
+      // Date range match (uses detectedDate, strictly distinguishing from satellite acquisition pass)
+      if (!isDateInFilterRange(event.detectedDate, filters.dateRange, globalFilters.startDate, globalFilters.endDate)) {
+        return false;
       }
 
       // Search match

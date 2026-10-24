@@ -80,6 +80,54 @@ export const MONITORED_REGIONS: Region[] = [
     canopyDensityPct: 95.0,
     riskRating: 'Moderate',
     lastSatellitePass: '3 hrs ago (PlanetScope 3m)'
+  },
+  {
+    id: 'western-ghats',
+    name: 'Western Ghats Corridor',
+    country: 'India (Kerala / Karnataka / Goa)',
+    biome: 'Tropical Montane & Wet Evergreen',
+    coordinates: { lat: 11.582, lng: 76.241 },
+    totalAreaHectares: 2400000,
+    monitoredCanopyHectares: 1845000,
+    canopyDensityPct: 91.2,
+    riskRating: 'Severe',
+    lastSatellitePass: '35 mins ago (Sentinel-2A)'
+  },
+  {
+    id: 'northeast-india',
+    name: 'Northeast Assam Arc',
+    country: 'India (Assam / Karbi Anglong)',
+    biome: 'Subtropical Wet Hill Forest',
+    coordinates: { lat: 26.184, lng: 93.312 },
+    totalAreaHectares: 1950000,
+    monitoredCanopyHectares: 1420000,
+    canopyDensityPct: 87.5,
+    riskRating: 'Severe',
+    lastSatellitePass: '52 mins ago (Landsat-9)'
+  },
+  {
+    id: 'sundarbans',
+    name: 'Sundarbans Biosphere',
+    country: 'India (West Bengal)',
+    biome: 'Tidal Halophytic Mangrove Forest',
+    coordinates: { lat: 22.145, lng: 88.812 },
+    totalAreaHectares: 963000,
+    monitoredCanopyHectares: 426000,
+    canopyDensityPct: 83.4,
+    riskRating: 'High',
+    lastSatellitePass: '1 hr ago (Sentinel-2B)'
+  },
+  {
+    id: 'central-highlands',
+    name: 'Central Sal Highlands',
+    country: 'India (Madhya Pradesh / CG)',
+    biome: 'Tropical Moist & Dry Deciduous',
+    coordinates: { lat: 22.385, lng: 81.124 },
+    totalAreaHectares: 1450000,
+    monitoredCanopyHectares: 980000,
+    canopyDensityPct: 78.6,
+    riskRating: 'Moderate',
+    lastSatellitePass: '2 hrs ago (Landsat-9)'
   }
 ];
 
@@ -219,6 +267,74 @@ export const DEMO_FOREST_LOSS_EVENTS: ForestLossEvent[] = [
     inspectorNotes: 'Selective felling of endangered Alerce stands; ranger enforcement team deployed.',
     tileCoordinates: '18GYH - Row 088 / Path 233',
     cloudCoveragePct: 6.2
+  },
+  {
+    id: 'EVT-IND-WG-01',
+    regionId: 'western-ghats',
+    regionName: 'Western Ghats Corridor',
+    coordinates: { lat: 11.582, lng: 76.241 },
+    detectedDate: '2026-10-22',
+    areaHectares: 142.8,
+    severity: 'critical',
+    confidenceScore: 0.96,
+    sensorSource: 'Sentinel-2 MSI',
+    ndviDrop: -0.48,
+    status: 'confirmed',
+    primaryDriver: 'Agricultural Expansion',
+    inspectorNotes: 'High-contrast boundary clearing and terrace preparation along Wayanad buffer zone.',
+    tileCoordinates: '43PFS - Row 054 / Path 145',
+    cloudCoveragePct: 3.8
+  },
+  {
+    id: 'EVT-IND-NE-02',
+    regionId: 'northeast-india',
+    regionName: 'Northeast Assam Arc',
+    coordinates: { lat: 26.184, lng: 93.312 },
+    detectedDate: '2026-10-21',
+    areaHectares: 104.2,
+    severity: 'critical',
+    confidenceScore: 0.94,
+    sensorSource: 'Sentinel-2 MSI',
+    ndviDrop: -0.52,
+    status: 'confirmed',
+    primaryDriver: 'Illegal Logging',
+    inspectorNotes: 'Linear timber extraction road and selective logging within Karbi Anglong forest corridor.',
+    tileCoordinates: '46RGN - Row 041 / Path 138',
+    cloudCoveragePct: 6.1
+  },
+  {
+    id: 'EVT-IND-SB-03',
+    regionId: 'sundarbans',
+    regionName: 'Sundarbans Biosphere',
+    coordinates: { lat: 22.145, lng: 88.812 },
+    detectedDate: '2026-10-19',
+    areaHectares: 48.5,
+    severity: 'high',
+    confidenceScore: 0.89,
+    sensorSource: 'Landsat-9 OLI-2',
+    ndviDrop: -0.36,
+    status: 'verifying',
+    primaryDriver: 'Alluvial Mining',
+    inspectorNotes: 'Estuarine bank erosion and sand extraction affecting core mangrove fringe.',
+    tileCoordinates: '45QXF - Row 044 / Path 139',
+    cloudCoveragePct: 5.4
+  },
+  {
+    id: 'EVT-IND-CH-04',
+    regionId: 'central-highlands',
+    regionName: 'Central Sal Highlands',
+    coordinates: { lat: 22.385, lng: 81.124 },
+    detectedDate: '2026-10-15',
+    areaHectares: 28.3,
+    severity: 'moderate',
+    confidenceScore: 0.86,
+    sensorSource: 'Sentinel-2 MSI',
+    ndviDrop: -0.29,
+    status: 'flagged',
+    primaryDriver: 'Road Corridor Construction',
+    inspectorNotes: 'State highway widening right-of-way corridor cut through dense sal canopy.',
+    tileCoordinates: '44QMF - Row 045 / Path 142',
+    cloudCoveragePct: 2.1
   }
 ];
 

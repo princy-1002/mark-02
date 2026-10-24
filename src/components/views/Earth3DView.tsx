@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import type { Viewer } from 'cesium';
 import { CesiumEarthViewer } from '../earth3d/CesiumEarthViewer';
 import { GlobeControlPanel } from '../earth3d/GlobeControlPanel';
@@ -24,6 +24,7 @@ import type {
   ForestCoverGeoJsonProperties
 } from '../../data/geoJsonData';
 import { DEMO_VERIFICATION_EVENTS } from '../../data/verificationData';
+import { MONITORED_REGIONS } from '../../data/demoData';
 import type { VerificationOutcome } from '../../types/verification';
 
 interface Earth3DViewProps {
@@ -137,8 +138,10 @@ export const Earth3DView: React.FC<Earth3DViewProps> = ({
     }
   };
 
-  // Synchronize activePreset whenever selectedRegionId changes
-  useEffect(() => {
+  // Synchronize activePreset whenever selectedRegionId changes from global filters
+  const [prevRegionId, setPrevRegionId] = useState(filters.selectedRegionId);
+  if (filters.selectedRegionId !== prevRegionId) {
+    setPrevRegionId(filters.selectedRegionId);
     const targetId = filters.selectedRegionId;
     if (targetId && targetId !== 'all') {
       const match = CAMERA_PRESETS.find(p => 
@@ -151,9 +154,23 @@ export const Earth3DView: React.FC<Earth3DViewProps> = ({
       );
       if (match) {
         setActivePreset(match);
+      } else {
+        const reg = MONITORED_REGIONS.find(r => r.id === targetId);
+        if (reg && reg.coordinates) {
+          setActivePreset({
+            id: reg.id,
+            name: reg.name,
+            country: reg.country,
+            lat: reg.coordinates.lat,
+            lng: reg.coordinates.lng,
+            height: 480000,
+            pitchDeg: -55,
+            headingDeg: 0
+          });
+        }
       }
     }
-  }, [filters.selectedRegionId]);
+  }
 
   return (
     <div className={`space-y-4 ${isFullscreen ? 'fixed inset-0 z-50 bg-[#070b09] p-4 m-0' : ''}`}>
@@ -205,6 +222,8 @@ export const Earth3DView: React.FC<Earth3DViewProps> = ({
           minAreaHa={filters.minAreaHa}
           maxAreaHa={filters.maxAreaHa}
           dateRange={filters.dateRange}
+          startDate={filters.startDate}
+          endDate={filters.endDate}
           activePreset={activePreset}
           isAutoRotating={isAutoRotating}
           onSelectLossRegion={(props) => setSelectedLossRegion(props)}

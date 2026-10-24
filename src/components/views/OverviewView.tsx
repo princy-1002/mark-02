@@ -9,6 +9,7 @@ import type {
   FilterState, 
   NavigationPage 
 } from '../../types/monitoring';
+import type { GlobalFilterState } from '../../types/layersAndFilters';
 import { MetricCard } from '../dashboard/MetricCard';
 import { MapWorkspacePlaceholder } from '../dashboard/MapWorkspacePlaceholder';
 import { TrendChart } from '../dashboard/TrendChart';
@@ -35,8 +36,8 @@ interface OverviewViewProps {
   trendData: TrendDataPoint[];
   severityDistribution: SeverityDistributionItem[];
   activities: MonitoringActivity[];
-  filters: FilterState;
-  onFilterChange: (updates: Partial<FilterState>) => void;
+  filters: GlobalFilterState | FilterState;
+  onFilterChange: (updates: Partial<GlobalFilterState>) => void;
   onResetFilters: () => void;
   onNavigateToPage: (page: NavigationPage) => void;
   isLoading: boolean;

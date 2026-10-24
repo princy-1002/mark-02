@@ -16,6 +16,7 @@ import type {
   AnalyticsSeverityItem,
   RegionalRankingItem
 } from '../types/analytics';
+import { isDateInFilterRange, isAreaInFilterRange } from '../types/layersAndFilters';
 
 export interface UnifiedDetectionItem {
   id: string;
@@ -179,23 +180,13 @@ export class AnalyticsService {
       }
 
       // Minimum & Maximum Area filter
-      if (filters.minAreaHa !== null && filters.minAreaHa !== undefined && item.areaHectares < filters.minAreaHa) {
-        return false;
-      }
-      if (filters.maxAreaHa !== null && filters.maxAreaHa !== undefined && item.areaHectares > filters.maxAreaHa) {
+      if (!isAreaInFilterRange(item.areaHectares, filters.minAreaHa, filters.maxAreaHa)) {
         return false;
       }
 
-      // Date range filter
-      if (filters.dateRange) {
-        const itemDate = new Date(item.detectedDate).getTime();
-        const refDate = new Date('2026-10-24').getTime();
-        const diffDays = (refDate - itemDate) / (1000 * 60 * 60 * 24);
-
-        if (filters.dateRange === '7d' && diffDays > 7) return false;
-        if (filters.dateRange === '30d' && diffDays > 30) return false;
-        if (filters.dateRange === '90d' && diffDays > 90) return false;
-        // ytd includes all 2026 detections
+      // Date range filter (uses detectedDate with inclusive custom dates or preset window)
+      if (!isDateInFilterRange(item.detectedDate, filters.dateRange, filters.startDate, filters.endDate)) {
+        return false;
       }
 
       // Search query

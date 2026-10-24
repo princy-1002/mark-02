@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
 import type { 
   NavigationPage, 
-  FilterState, 
   ForestLossEvent 
 } from './types/monitoring';
+import type { GlobalFilterState } from './types/layersAndFilters';
+import { DEFAULT_GLOBAL_FILTERS } from './types/layersAndFilters';
 import { MonitoringService } from './services/monitoringService';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopNav } from './components/layout/TopNav';
@@ -23,14 +24,11 @@ export function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  // Filter state
-  const [filters, setFilters] = useState<FilterState>({
-    searchQuery: '',
-    selectedRegionId: 'amazon-br',
-    dateRange: '30d',
-    selectedSeverity: 'all',
-    selectedStatus: 'all'
-  });
+  // Unified persistent global filter state shared across Map, Detection & Analytics
+  const [filters, setFilters] = useState<GlobalFilterState>(() => ({
+    ...DEFAULT_GLOBAL_FILTERS,
+    selectedRegionId: 'amazon-br'
+  }));
 
   // Simulator states for user testing loading & error states
   const [isLoadingSimulated, setIsLoadingSimulated] = useState(false);
@@ -80,18 +78,15 @@ export function App() {
   }, []);
 
   // Filter update handler
-  const handleFilterChange = (updates: Partial<FilterState>) => {
+  const handleFilterChange = (updates: Partial<GlobalFilterState>) => {
     setFilters(prev => ({ ...prev, ...updates }));
   };
 
-  // Reset filters
+  // Reset filters to defaults
   const handleResetFilters = () => {
     setFilters({
-      searchQuery: '',
-      selectedRegionId: 'amazon-br',
-      dateRange: '30d',
-      selectedSeverity: 'all',
-      selectedStatus: 'all'
+      ...DEFAULT_GLOBAL_FILTERS,
+      selectedRegionId: 'all'
     });
   };
 
@@ -171,6 +166,9 @@ export function App() {
             <Earth3DView
               onBackToOverview={() => setActivePage('overview')}
               selectedRegionId={filters.selectedRegionId}
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              onClearFilters={handleResetFilters}
             />
           ) : activePage === 'satellite-comparison' ? (
             <SatelliteComparisonView
@@ -179,6 +177,9 @@ export function App() {
           ) : activePage === 'forest-loss-detection' ? (
             <ForestLossDetectionView
               onBackToOverview={() => setActivePage('overview')}
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              onClearFilters={handleResetFilters}
             />
           ) : activePage === 'analyst-workspace' ? (
             <AnalystWorkspaceView
@@ -187,6 +188,9 @@ export function App() {
           ) : activePage === 'analytics' ? (
             <AnalyticsView
               onBackToOverview={() => setActivePage('overview')}
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              onClearFilters={handleResetFilters}
               onNavigateToMap={(targetPage, regionId) => {
                 if (regionId) {
                   handleFilterChange({ selectedRegionId: regionId });

@@ -3,6 +3,8 @@ import type { SeverityLevel, DateRangeOption } from './monitoring';
 export interface AnalyticsFilterState {
   selectedRegionId: string;
   dateRange: DateRangeOption;
+  startDate?: string | null;
+  endDate?: string | null;
   selectedSeverity: string;
   searchQuery: string;
   minAreaHa?: number | null;

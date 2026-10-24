@@ -253,34 +253,40 @@ export const MapLayerFilterPanel: React.FC<MapLayerFilterPanelProps> = ({
             )}
           </button>
 
-          {/* Sentinel-1 SAR Radar Overlay */}
-          <button
-            onClick={() => onToggleLayer('radarLayer')}
-            className={`w-full flex items-center justify-between p-2 rounded-lg border transition-all text-left ${
-              filters.layers.radarLayer
-                ? 'bg-[#0f1b21] border-blue-700/50 text-slate-200'
-                : 'bg-[#090d0b] border-[#18241d] text-slate-400 opacity-60'
-            }`}
+          {/* Sentinel-1 SAR Radar Overlay - Not configured in current deployment */}
+          <div
+            className="w-full flex items-center justify-between p-2 rounded-lg border border-[#18241d] bg-[#090d0b] text-slate-500 opacity-70 cursor-not-allowed"
+            title="Sentinel-1 GRD SAR backscatter provider is pending integration. Layer currently unavailable."
           >
             <div className="flex items-center gap-2">
-              <span className="w-3.5 h-0.5 bg-blue-400" />
+              <span className="w-3.5 h-0.5 bg-blue-500/50" />
               <div>
-                <span className="text-xs font-medium block">Sentinel-1 SAR Radar</span>
-                <span className="text-[10px] text-slate-500 block">All-Weather Backscatter Drop</span>
+                <span className="text-xs font-medium block text-slate-400">Sentinel-1 SAR Radar</span>
+                <span className="text-[9px] text-amber-400/80 block">Unavailable (Provider Pending)</span>
               </div>
             </div>
-            {filters.layers.radarLayer ? (
-              <Eye size={13} className="text-blue-400" />
-            ) : (
-              <EyeOff size={13} className="text-slate-500" />
-            )}
-          </button>
+            <EyeOff size={13} className="text-slate-600" />
+          </div>
         </div>
       )}
 
       {/* Tab 2: Map Anomaly Filters */}
       {activeTab === 'filters' && (
         <div className="p-3 space-y-3 max-h-80 overflow-y-auto">
+          {/* Active Filters Header & Clear Button */}
+          {activeCount > 0 && (
+            <div className="flex items-center justify-between pb-2 border-b border-[#18261e] text-[10px]">
+              <span className="text-emerald-400 font-semibold uppercase">{activeCount} Filter{activeCount > 1 ? 's' : ''} Active</span>
+              <button
+                onClick={onClearFilters}
+                className="flex items-center gap-1 text-red-400 hover:text-red-300 transition-colors"
+              >
+                <RotateCcw size={10} />
+                Clear All
+              </button>
+            </div>
+          )}
+
           {/* Severity Filter */}
           <div>
             <div className="flex items-center justify-between text-[10px] uppercase font-semibold text-slate-400 mb-1.5">
@@ -314,11 +320,12 @@ export const MapLayerFilterPanel: React.FC<MapLayerFilterPanelProps> = ({
               <span>Affected Area Threshold</span>
               <span className="text-emerald-400">
                 {filters.minAreaHa ? `≥ ${filters.minAreaHa} ha` : 'All Sizes'}
+                {filters.maxAreaHa ? ` - ${filters.maxAreaHa} ha` : ''}
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-2 gap-1.5 mb-2">
               {areaPillPresets.map((preset, idx) => {
-                const isSelected = filters.minAreaHa === preset.min;
+                const isSelected = filters.minAreaHa === preset.min && filters.maxAreaHa === preset.max;
                 return (
                   <button
                     key={idx}
@@ -334,21 +341,39 @@ export const MapLayerFilterPanel: React.FC<MapLayerFilterPanelProps> = ({
                 );
               })}
             </div>
+            {/* Custom min/max inputs */}
+            <div className="flex items-center gap-2 text-[10px]">
+              <input
+                type="number"
+                placeholder="Min ha"
+                value={filters.minAreaHa ?? ''}
+                onChange={(e) => onFilterChange({ minAreaHa: e.target.value ? Number(e.target.value) : null })}
+                className="w-1/2 px-2 py-1 bg-[#111915] border border-[#203126] rounded text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-emerald-600/60"
+              />
+              <span className="text-slate-500">to</span>
+              <input
+                type="number"
+                placeholder="Max ha"
+                value={filters.maxAreaHa ?? ''}
+                onChange={(e) => onFilterChange({ maxAreaHa: e.target.value ? Number(e.target.value) : null })}
+                className="w-1/2 px-2 py-1 bg-[#111915] border border-[#203126] rounded text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-emerald-600/60"
+              />
+            </div>
           </div>
 
           {/* Date Range Selection */}
           <div>
             <div className="flex items-center justify-between text-[10px] uppercase font-semibold text-slate-400 mb-1.5">
               <span>Observation Date Window</span>
-              <span className="text-slate-500 uppercase">{filters.dateRange}</span>
+              <span className="text-slate-500 uppercase">{filters.startDate ? 'Custom' : filters.dateRange}</span>
             </div>
-            <div className="grid grid-cols-4 gap-1">
+            <div className="grid grid-cols-4 gap-1 mb-2">
               {dateOptions.map(opt => (
                 <button
                   key={opt.id}
-                  onClick={() => onFilterChange({ dateRange: opt.id })}
+                  onClick={() => onFilterChange({ dateRange: opt.id, startDate: null, endDate: null })}
                   className={`py-1 text-[10px] font-mono rounded text-center transition-all ${
-                    filters.dateRange === opt.id
+                    !filters.startDate && filters.dateRange === opt.id
                       ? 'bg-emerald-950/80 text-emerald-300 font-bold border border-emerald-700/60'
                       : 'bg-[#0e1612] text-slate-400 hover:text-slate-200 border border-[#1b2921]'
                   }`}
@@ -356,6 +381,41 @@ export const MapLayerFilterPanel: React.FC<MapLayerFilterPanelProps> = ({
                   {opt.label}
                 </button>
               ))}
+            </div>
+
+            {/* Custom Start & End Date Inputs */}
+            <div className="space-y-1.5 pt-1 border-t border-[#16221b]">
+              <div className="flex items-center justify-between text-[10px] text-slate-500">
+                <span>Custom Date Span:</span>
+                {(filters.startDate || filters.endDate) && (
+                  <button
+                    onClick={() => onFilterChange({ startDate: null, endDate: null })}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    Clear dates
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[10px]">
+                <div>
+                  <label className="text-[9px] text-slate-500 block mb-0.5">Start Date</label>
+                  <input
+                    type="date"
+                    value={filters.startDate ?? ''}
+                    onChange={(e) => onFilterChange({ startDate: e.target.value || null })}
+                    className="w-full px-1.5 py-0.5 bg-[#111915] border border-[#203126] rounded text-slate-200 text-[10px] focus:outline-none focus:border-emerald-600/60"
+                  />
+                </div>
+                <div>
+                  <label className="text-[9px] text-slate-500 block mb-0.5">End Date</label>
+                  <input
+                    type="date"
+                    value={filters.endDate ?? ''}
+                    onChange={(e) => onFilterChange({ endDate: e.target.value || null })}
+                    className="w-full px-1.5 py-0.5 bg-[#111915] border border-[#203126] rounded text-slate-200 text-[10px] focus:outline-none focus:border-emerald-600/60"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
