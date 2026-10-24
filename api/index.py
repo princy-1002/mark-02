@@ -29,7 +29,10 @@ try:
         so all registered routes match without duplicate definitions.
         """
         path = request.scope.get("path", "")
-        if not path.startswith("/api") and path not in {"/", "/health", "/docs", "/redoc", "/openapi.json"}:
+        orig = request.headers.get("x-matched-path") or request.headers.get("x-vercel-matched-path")
+        if orig and orig.startswith("/api/") and orig != "/api/index":
+            request.scope["path"] = orig
+        elif not path.startswith("/api") and path not in {"/", "/health", "/docs", "/redoc", "/openapi.json"}:
             request.scope["path"] = f"/api{path}"
         return await call_next(request)
 

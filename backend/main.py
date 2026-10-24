@@ -124,6 +124,7 @@ def root_service_status():
 
 
 @app.get("/api", tags=["system"])
+@app.get("/api/index", tags=["system"])
 def api_index():
     """Index of primary API endpoints."""
     return {
