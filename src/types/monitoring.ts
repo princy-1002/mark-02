@@ -92,6 +92,7 @@ export type NavigationPage =
   | 'earth-3d' 
   | 'forest-loss-detection' 
   | 'satellite-comparison' 
+  | 'ai-model-lab'
   | 'analyst-workspace'
   | 'analytics' 
   | 'alerts' 

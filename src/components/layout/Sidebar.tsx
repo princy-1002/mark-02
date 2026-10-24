@@ -11,7 +11,8 @@ import {
   Radio, 
   ChevronLeft, 
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  BrainCircuit
 } from 'lucide-react';
 import type { NavigationPage } from '../../types/monitoring';
 
@@ -60,6 +61,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'satellite-comparison',
       label: 'Satellite Comparison',
       icon: <Layers size={18} />
+    },
+    {
+      id: 'ai-model-lab',
+      label: 'AI Model Lab',
+      icon: <BrainCircuit size={18} />,
+      tag: 'PyTorch ML'
     },
     {
       id: 'analyst-workspace',
@@ -178,6 +185,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono ${
                   item.tag === 'CesiumJS' 
                     ? 'bg-cyan-950/70 text-cyan-300 border border-cyan-500/40 shadow-[0_0_8px_rgba(6,182,212,0.25)]' 
+                    : item.tag === 'PyTorch ML'
+                    ? 'bg-sky-950/70 text-sky-300 border border-sky-400/50 shadow-[0_0_8px_rgba(56,189,248,0.3)]'
                     : 'bg-emerald-950/70 text-emerald-300 border border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.25)]'
                 }`}>
                   {item.tag}

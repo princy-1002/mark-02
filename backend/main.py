@@ -44,6 +44,7 @@ from .fixtures import TREND_DATA
 
 from .satellite import router as satellite_router
 from .ml import router as ml_router
+from .model_lab import router as model_lab_router
 
 # ─── App setup ────────────────────────────────────────────────────────────────
 
@@ -63,14 +64,9 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174",
-    ],
+    allow_origins=["*"],
     allow_credentials=False,
-    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -78,6 +74,7 @@ app.add_middleware(
 
 app.include_router(satellite_router)
 app.include_router(ml_router)
+app.include_router(model_lab_router)
 
 # ─── Health ───────────────────────────────────────────────────────────────────
 
@@ -92,11 +89,12 @@ def health_check():
             "fixtures": "ok",
             "satellite_ingestion": "connected",
             "ml_inference": "connected",
+            "model_lab": "connected",
             "database": "not_connected",
         },
         disclaimer=(
-            "CL-01 Sentinel-2 ingestion and ML bi-temporal inference engines connected. "
-            "Real change detection polygons and alerts can be processed and published on demand."
+            "CL-01 Sentinel-2 ingestion, ML bi-temporal inference, and AI Model Lab engines connected. "
+            "Real change detection polygons, neural network training, and alerts can be processed on demand."
         ),
     )
 

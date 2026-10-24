@@ -9,10 +9,18 @@ import math
 from typing import Dict, Any, List, Tuple, Optional
 from datetime import datetime
 import numpy as np
-import rasterio
-from rasterio.transform import from_bounds
-from rasterio.crs import CRS
-from rasterio.enums import Resampling
+try:
+    import rasterio
+    from rasterio.transform import from_bounds
+    from rasterio.crs import CRS
+    from rasterio.enums import Resampling
+    HAS_RASTERIO = True
+except (ImportError, Exception):
+    rasterio = None
+    from_bounds = None
+    CRS = None
+    Resampling = None
+    HAS_RASTERIO = False
 
 from .geometry import validate_geographic_bbox
 

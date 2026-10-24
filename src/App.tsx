@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { 
   NavigationPage, 
   ForestLossEvent 
@@ -11,6 +11,7 @@ import { TopNav } from './components/layout/TopNav';
 import { OverviewView } from './components/views/OverviewView';
 import { Earth3DView } from './components/views/Earth3DView';
 import { SatelliteComparisonView } from './components/views/SatelliteComparisonView';
+import { AiModelLabView } from './components/views/AiModelLabView';
 import { ForestLossDetectionView } from './components/views/ForestLossDetectionView';
 import { AnalystWorkspaceView } from './components/views/AnalystWorkspaceView';
 import { AnalyticsView } from './components/views/AnalyticsView';
@@ -19,8 +20,16 @@ import { ReportsView } from './components/views/ReportsView';
 import { PlaceholderView } from './components/views/PlaceholderView';
 
 export function App() {
-  // Navigation state
-  const [activePage, setActivePage] = useState<NavigationPage>('overview');
+  // Navigation state with direct URL hash and browser refresh support
+  const [activePage, setActivePage] = useState<NavigationPage>(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.replace('#', '').trim();
+      if (hash === 'ai-model-lab' || hash === 'overview' || hash === 'earth-3d' || hash === 'forest-loss-detection' || hash === 'satellite-comparison' || hash === 'analyst-workspace' || hash === 'analytics' || hash === 'alerts' || hash === 'reports' || hash === 'settings') {
+        return hash as NavigationPage;
+      }
+    }
+    return 'overview';
+  });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -98,6 +107,25 @@ export function App() {
     }));
   };
 
+  // Sync hash changes for direct URL deep-linking and browser refresh
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash.replace('#', '').trim();
+      if (hash && hash !== activePage) {
+        setActivePage(hash as NavigationPage);
+      }
+    };
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, [activePage]);
+
+  const handleNavigatePage = (page: NavigationPage) => {
+    setActivePage(page);
+    if (typeof window !== 'undefined') {
+      window.location.hash = page;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-transparent text-slate-100 flex flex-col antialiased selection:bg-teal-500/30 selection:text-teal-200">
       {/* Mobile Sidebar Backdrop */}
@@ -113,7 +141,7 @@ export function App() {
         <Sidebar
           activePage={activePage}
           onPageChange={(page) => {
-            setActivePage(page);
+            handleNavigatePage(page);
             setMobileSidebarOpen(false);
           }}
           collapsed={sidebarCollapsed}
@@ -172,7 +200,11 @@ export function App() {
             />
           ) : activePage === 'satellite-comparison' ? (
             <SatelliteComparisonView
-              onBackToOverview={() => setActivePage('overview')}
+              onBackToOverview={() => handleNavigatePage('overview')}
+            />
+          ) : activePage === 'ai-model-lab' ? (
+            <AiModelLabView
+              onBackToOverview={() => handleNavigatePage('overview')}
             />
           ) : activePage === 'forest-loss-detection' ? (
             <ForestLossDetectionView

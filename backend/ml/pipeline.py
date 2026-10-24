@@ -9,11 +9,21 @@ import logging
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional, Tuple
 import numpy as np
-import rasterio
-from rasterio.features import shapes
-from shapely.geometry import shape, mapping
-from shapely.validation import make_valid
-from pyproj import Geod
+try:
+    import rasterio
+    from rasterio.features import shapes
+    from shapely.geometry import shape, mapping
+    from shapely.validation import make_valid
+    from pyproj import Geod
+    HAS_GEOSPATIAL = True
+except (ImportError, Exception):
+    rasterio = None
+    shapes = None
+    shape = None
+    mapping = None
+    make_valid = None
+    Geod = None
+    HAS_GEOSPATIAL = False
 
 from .model import ForestLossDetectionModel
 from ..satellite.preprocessing import write_geotiff

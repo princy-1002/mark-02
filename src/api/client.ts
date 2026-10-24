@@ -12,8 +12,18 @@
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-export const API_BASE_URL: string =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8000';
+/**
+ * Base URL for all API requests.
+ * Reads from VITE_API_BASE_URL when specified.
+ * When VITE_API_BASE_URL is not set (such as default production Vercel builds):
+ * - Defaults to empty string "" so that requests use same-origin relative URLs (/api/...).
+ *   This eliminates Mixed Content blocks (HTTPS -> HTTP) and connection refused errors
+ *   caused by hardcoding localhost in deployed environments.
+ * - In local development with the Vite proxy, relative requests (/api/...) are automatically
+ *   forwarded to the local FastAPI backend.
+ */
+const envApiUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
+export const API_BASE_URL: string = envApiUrl ? envApiUrl.trim().replace(/\/+$/, '') : '';
 
 // ─── Error type ──────────────────────────────────────────────────────────────
 
@@ -37,7 +47,8 @@ export function isApiError(err: unknown): err is ApiError {
 // ─── Core fetch wrapper ───────────────────────────────────────────────────────
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = `${API_BASE_URL}${path}`;
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const url = `${API_BASE_URL}${normalizedPath}`;
   const response = await fetch(url, {
     headers: { Accept: 'application/json', ...init?.headers },
     ...init,
