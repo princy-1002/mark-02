@@ -8,6 +8,7 @@ import type {
   ModelRegistryItem
 } from '../../types/modelLab';
 import { ModelLabService } from '../../services/modelLabService';
+import { formatApiErrorMessage, API_BASE_URL } from '../../api/client';
 import { DatasetUploadCard } from '../modelLab/DatasetUploadCard';
 import { DatasetPreparePanel } from '../modelLab/DatasetPreparePanel';
 import { ModelConfigurePanel } from '../modelLab/ModelConfigurePanel';
@@ -80,9 +81,7 @@ export const AiModelLabView: React.FC<AiModelLabViewProps> = ({
       }
     } catch (err: any) {
       setIsOffline(true);
-      setOfflineMessage(
-        err.message || 'FastAPI ML backend is unreachable. Make sure the local backend is running (py -m uvicorn backend.main:app --port 8000).'
-      );
+      setOfflineMessage(formatApiErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -160,17 +159,32 @@ export const AiModelLabView: React.FC<AiModelLabViewProps> = ({
 
       {/* Offline Alert Banner if backend is not running */}
       {isOffline && (
-        <div className="p-4 rounded-xl bg-red-950/60 border border-red-500/50 text-xs font-sans text-red-200 flex items-start gap-3 shadow-[0_0_16px_rgba(239,68,68,0.2)]">
-          <AlertTriangle size={18} className="text-red-400 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <h4 className="font-bold text-red-100 font-mono">Backend Service Unavailable</h4>
-            <p className="text-red-200/90 leading-relaxed">
-              {offlineMessage}
-            </p>
-            <div className="text-[11px] font-mono text-slate-300 pt-1">
-              Start backend locally: <code className="bg-black/60 px-2 py-0.5 rounded text-sky-300">py -m uvicorn backend.main:app --port 8000</code>
+        <div className="p-4 rounded-xl bg-red-950/60 border border-red-500/50 text-xs font-sans text-red-200 flex flex-col sm:flex-row items-start justify-between gap-3 shadow-[0_0_16px_rgba(239,68,68,0.2)]">
+          <div className="flex items-start gap-3">
+            <AlertTriangle size={18} className="text-red-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-bold text-red-100 font-mono">Backend Service Unavailable</h4>
+              <p className="text-red-200/90 leading-relaxed">
+                {offlineMessage}
+              </p>
+              <div className="text-[11px] font-mono text-slate-300 pt-1 flex flex-wrap items-center gap-2">
+                <span>Start backend locally: <code className="bg-black/60 px-2 py-0.5 rounded text-sky-300">py -m uvicorn backend.main:app --port 8000</code></span>
+                {API_BASE_URL && (
+                  <span className="text-slate-400">• Configured URL: <code className="bg-black/60 px-2 py-0.5 rounded text-emerald-300">{API_BASE_URL}</code></span>
+                )}
+              </div>
             </div>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadPlatformData}
+            isLoading={isLoading}
+            icon={<RefreshCw size={13} />}
+            className="shrink-0 border-red-500/40 hover:bg-red-900/30 text-red-200"
+          >
+            Retry Connection
+          </Button>
         </div>
       )}
 

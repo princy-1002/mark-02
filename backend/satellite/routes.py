@@ -54,6 +54,19 @@ class IngestionJobResponse(BaseModel):
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
+@router.get("", tags=["satellite-ingestion"])
+@router.get("/", tags=["satellite-ingestion"])
+def satellite_root():
+    """Satellite Ingestion module index."""
+    return {
+        "module": "Satellite Ingestion Engine",
+        "status": "ready",
+        "provider_info": "/api/satellite/provider-info",
+        "search": "/api/satellite/search",
+        "jobs": "/api/satellite/jobs",
+    }
+
+
 @router.get("/provider-info", tags=["satellite-ingestion"])
 def get_provider_info():
     """

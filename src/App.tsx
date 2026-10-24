@@ -17,6 +17,7 @@ import { AnalystWorkspaceView } from './components/views/AnalystWorkspaceView';
 import { AnalyticsView } from './components/views/AnalyticsView';
 import { AlertsView } from './components/views/AlertsView';
 import { ReportsView } from './components/views/ReportsView';
+import { SettingsView } from './components/views/SettingsView';
 import { PlaceholderView } from './components/views/PlaceholderView';
 
 export function App() {
@@ -249,6 +250,10 @@ export function App() {
                 }
                 setActivePage(targetPage);
               }}
+            />
+          ) : activePage === 'settings' ? (
+            <SettingsView
+              onBackToOverview={() => setActivePage('overview')}
             />
           ) : (
             <PlaceholderView

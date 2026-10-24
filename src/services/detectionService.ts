@@ -2,6 +2,7 @@ import type {
   DetectionPolygonResult, 
   DetectionFilterState
 } from '../types/monitoring';
+import { fetchDetections } from '../api/client';
 
 export const DEMO_DETECTION_RESULTS: DetectionPolygonResult[] = [
   {
@@ -230,12 +231,11 @@ export class DetectionService {
    */
   static async syncFromBackend(): Promise<number> {
     try {
-      const res = await fetch('/api/detections?dateRange=ytd&pageSize=100');
-      if (!res.ok) return 0;
-      const data = await res.json();
-      if (Array.isArray(data.items)) {
-        const dynamicItems = data.items.filter((item: any) => item.id && item.id.startsWith('DET-ML-'));
-        this.addDynamicDetections(dynamicItems);
+      const response = await fetchDetections({ dateRange: 'ytd', pageSize: 100 });
+      const records = Array.isArray(response?.data) ? response.data : [];
+      const dynamicItems = records.filter((item: any) => item.id && item.id.startsWith('DET-ML-'));
+      if (dynamicItems.length > 0) {
+        this.addDynamicDetections(dynamicItems as any);
         return dynamicItems.length;
       }
     } catch (e) {

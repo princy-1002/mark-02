@@ -1,0 +1,109 @@
+{
+  "job_id": "job-c559b70494",
+  "model_name": "Test-UNet-Runner",
+  "architecture": "forest_segnet_light",
+  "dataset_id": "ds-western-ghats-benchmark",
+  "dataset_name": "ds-western-ghats-benchmark",
+  "status": "completed",
+  "progress_pct": 100,
+  "current_epoch": 2,
+  "total_epochs": 2,
+  "current_train_loss": 0.8285,
+  "current_val_loss": 0.816,
+  "loss_history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.9099,
+      "val_loss": 0.8548,
+      "val_iou": 0.0,
+      "val_dice": 0.0
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.8285,
+      "val_loss": 0.816,
+      "val_iou": 0.0,
+      "val_dice": 0.0
+    }
+  ],
+  "metrics": {
+    "iou": 0.0,
+    "dice": 0.0,
+    "f1_score": 0.0,
+    "precision": 0.0,
+    "recall": 0.0,
+    "accuracy": 0.9948,
+    "specificity": 0.9948,
+    "confusion_matrix": {
+      "true_positive": 0,
+      "false_positive": 954,
+      "true_negative": 183366,
+      "false_negative": 0
+    },
+    "sample_count": 5,
+    "qualitative_samples": [
+      {
+        "sample_id": "scene04_patch16_sentinel2",
+        "image_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch16_sentinel2_gt.png",
+        "ground_truth_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch16_sentinel2_gt.png",
+        "prediction_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch16_sentinel2_pred.png",
+        "difference_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch16_sentinel2_diff.png",
+        "iou": 0.0,
+        "dice": 0.0
+      },
+      {
+        "sample_id": "scene04_patch17_sentinel2",
+        "image_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch17_sentinel2_gt.png",
+        "ground_truth_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch17_sentinel2_gt.png",
+        "prediction_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch17_sentinel2_pred.png",
+        "difference_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch17_sentinel2_diff.png",
+        "iou": 0.0,
+        "dice": 0.0
+      },
+      {
+        "sample_id": "scene04_patch18_sentinel2",
+        "image_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch18_sentinel2_gt.png",
+        "ground_truth_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch18_sentinel2_gt.png",
+        "prediction_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch18_sentinel2_pred.png",
+        "difference_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch18_sentinel2_diff.png",
+        "iou": 0.0,
+        "dice": 0.0
+      },
+      {
+        "sample_id": "scene04_patch19_sentinel2",
+        "image_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch19_sentinel2_gt.png",
+        "ground_truth_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch19_sentinel2_gt.png",
+        "prediction_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch19_sentinel2_pred.png",
+        "difference_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch19_sentinel2_diff.png",
+        "iou": 0.0,
+        "dice": 0.0
+      },
+      {
+        "sample_id": "scene04_patch20_sentinel2",
+        "image_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch20_sentinel2_gt.png",
+        "ground_truth_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch20_sentinel2_gt.png",
+        "prediction_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch20_sentinel2_pred.png",
+        "difference_url": "/api/model-lab/jobs/job-c559b70494/eval-samples/scene04_patch20_sentinel2_diff.png",
+        "iou": 0.0,
+        "dice": 0.0
+      }
+    ]
+  },
+  "logs": [
+    "[01:12:49] Job initialized with architecture 'forest_segnet_light'.",
+    "[01:12:49] Compute device: CPU (Multi-Threaded) (CPU).",
+    "[01:12:49] Training parameters: 2 epochs, batch size 4, lr 0.002, optimizer AdamW.",
+    "[01:12:49] Loading train and validation splits...",
+    "[01:12:49] Loaded 20 train samples, 5 val samples, 5 test samples.",
+    "[01:12:50] Beginning neural network training loop on cpu...",
+    "[01:12:51] [Epoch 01/02] Train Loss: 0.9099 | Val Loss: 0.8548 | IoU: 0.000 | Dice: 0.000",
+    "[01:12:53] [Epoch 02/02] Train Loss: 0.8285 | Val Loss: 0.8160 | IoU: 0.000 | Dice: 0.000",
+    "[01:12:53] Training phase complete. Running evaluation on held-out test set...",
+    "[01:12:53] Model registered as 'Test-UNet-Runner' (Version 1.0.v0973) in model registry."
+  ],
+  "compute_device": "CPU (Multi-Threaded)",
+  "created_at": "2026-10-24T19:42:49.439152+00:00",
+  "updated_at": "2026-10-24T19:42:53.554019+00:00",
+  "error_detail": null,
+  "model_version_id": "mod-58983263"
+}

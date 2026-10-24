@@ -12,12 +12,13 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { isApiError } from './client';
+import { isApiError, formatApiErrorMessage, type ApiError } from './client';
 
 export interface ApiState<T> {
   data: T | null;
   loading: boolean;
   error: string | null;
+  apiError: ApiError | null;
   isApiError: boolean;
   reload: () => void;
 }
@@ -29,6 +30,7 @@ export function useApi<T>(
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<ApiError | null>(null);
   const [apiErrFlag, setApiErrFlag] = useState(false);
   const [tick, setTick] = useState(0);
 
@@ -41,6 +43,7 @@ export function useApi<T>(
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setApiError(null);
     setApiErrFlag(false);
 
     fetcherRef.current()
@@ -55,12 +58,10 @@ export function useApi<T>(
           setLoading(false);
           if (isApiError(err)) {
             setApiErrFlag(true);
-            setError(`Server error ${err.statusCode}: ${err.detail}`);
-          } else if (err instanceof TypeError && (err.message.includes('fetch') || err.message.includes('network'))) {
-            setApiErrFlag(true);
-            setError('Cannot reach the API server. Make sure the backend is running on http://localhost:8000.');
+            setApiError(err);
+            setError(formatApiErrorMessage(err));
           } else {
-            setError(err instanceof Error ? err.message : String(err));
+            setError(formatApiErrorMessage(err));
           }
         }
       });
@@ -71,5 +72,6 @@ export function useApi<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tick, ...deps]);
 
-  return { data, loading, error, isApiError: apiErrFlag, reload };
+  return { data, loading, error, apiError, isApiError: apiErrFlag, reload };
 }
+

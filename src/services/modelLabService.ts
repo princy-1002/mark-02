@@ -2,7 +2,7 @@
  * AI Model Lab API Service
  */
 
-import { API_BASE_URL } from '../api/client';
+import { API_BASE_URL, apiFetch } from '../api/client';
 import type {
   ModelLabInfo,
   ModelArchitectureConfig,
@@ -16,28 +16,7 @@ import type {
 } from '../types/modelLab';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  const url = `${API_BASE_URL}${normalizedPath}`;
-  const res = await fetch(url, {
-    ...init,
-    headers: {
-      Accept: 'application/json',
-      ...init?.headers,
-    },
-  });
-
-  if (!res.ok) {
-    let detail = res.statusText;
-    try {
-      const err = await res.json();
-      detail = err.detail || err.message || detail;
-    } catch {
-      // not json
-    }
-    throw new Error(detail);
-  }
-
-  return res.json() as Promise<T>;
+  return apiFetch<T>(path, init);
 }
 
 export const ModelLabService = {
@@ -70,24 +49,11 @@ export const ModelLabService = {
       formData.append('name', name);
     }
 
-    const url = `${API_BASE_URL}/api/model-lab/datasets/upload`;
-    const res = await fetch(url, {
+    return apiFetch<DatasetSummary>('/api/model-lab/datasets/upload', {
       method: 'POST',
       body: formData,
+      timeoutMs: 60000,
     });
-
-    if (!res.ok) {
-      let detail = res.statusText;
-      try {
-        const err = await res.json();
-        detail = err.detail || err.message || detail;
-      } catch {
-        // not json
-      }
-      throw new Error(detail);
-    }
-
-    return res.json();
   },
 
   async prepareDataset(req: DatasetPrepareRequest): Promise<DatasetPrepareResponse> {
@@ -150,24 +116,11 @@ export const ModelLabService = {
     formData.append('model_id', params.modelId);
     formData.append('confidence_threshold', params.confidenceThreshold.toString());
 
-    const url = `${API_BASE_URL}/api/model-lab/inference/predict`;
-    const res = await fetch(url, {
+    return apiFetch<InferenceResultResponse>('/api/model-lab/inference/predict', {
       method: 'POST',
       body: formData,
+      timeoutMs: 60000,
     });
-
-    if (!res.ok) {
-      let detail = res.statusText;
-      try {
-        const err = await res.json();
-        detail = err.detail || err.message || detail;
-      } catch {
-        // not json
-      }
-      throw new Error(detail);
-    }
-
-    return res.json();
   },
 
   getAssetUrl(relativePath: string): string {

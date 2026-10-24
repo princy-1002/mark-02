@@ -1,0 +1,28 @@
+{
+  "inference_id": "inf-8d5447a9b5",
+  "model_id": "mod-cl01-baseline-unet",
+  "model_version": "1.0.0-rc1",
+  "model_name": "CL01-UNet-WesternGhats-Baseline",
+  "image_name": "sample_sentinel2_clearing.png",
+  "original_image_url": "/api/model-lab/inference/inf-8d5447a9b5/original.png",
+  "mask_image_url": "/api/model-lab/inference/inf-8d5447a9b5/loss_mask.png",
+  "overlay_image_url": "/api/model-lab/inference/inf-8d5447a9b5/overlay.png",
+  "mask_download_url": "/api/model-lab/inference/inf-8d5447a9b5/download-mask",
+  "total_area_ha": null,
+  "total_pixels": 36864,
+  "forest_loss_pixels": 36864,
+  "forest_loss_pct": 100.0,
+  "forest_loss_ha": null,
+  "mean_confidence": 0.531,
+  "is_georeferenced": false,
+  "crs": null,
+  "severity_breakdown": {
+    "critical": 0,
+    "high": 0,
+    "moderate": 36864
+  },
+  "geojson": null,
+  "execution_time_sec": 0.343,
+  "created_at": "2026-10-24T19:07:08.233094+00:00",
+  "disclaimer": "Model prediction is an automated statistical estimate intended for environmental monitoring and analyst triage. Ground verification is required before legal confirmation."
+}

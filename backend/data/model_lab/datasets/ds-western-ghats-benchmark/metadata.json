@@ -1,0 +1,91 @@
+{
+  "dataset_id": "ds-western-ghats-benchmark",
+  "name": "Western Ghats Forest Canopy Loss Benchmark",
+  "description": "Verified Sentinel-2 MSI 10m multispectral patches over high-risk deforestation corridors in the Western Ghats biome, paired with analyst-validated ground truth forest clearance masks.",
+  "file_count": 60,
+  "image_count": 30,
+  "mask_count": 30,
+  "size_bytes": 3932160,
+  "dimensions": "192x192",
+  "formats": [
+    ".png"
+  ],
+  "has_labels": true,
+  "has_geospatial_metadata": true,
+  "crs": "EPSG:4326 (WGS-84 / UTM 43N)",
+  "created_at": "2026-10-24T18:46:58.872148+00:00",
+  "status": "ready",
+  "sample_images": [
+    {
+      "name": "scene01_patch01_sentinel2.png",
+      "dimensions": "192x192",
+      "has_mask": true,
+      "mask_name": "scene01_patch01_mask.png",
+      "preview_url": "/api/model-lab/datasets/ds-western-ghats-benchmark/previews/scene01_patch01_preview.jpg"
+    },
+    {
+      "name": "scene01_patch02_sentinel2.png",
+      "dimensions": "192x192",
+      "has_mask": true,
+      "mask_name": "scene01_patch02_mask.png",
+      "preview_url": "/api/model-lab/datasets/ds-western-ghats-benchmark/previews/scene01_patch02_preview.jpg"
+    },
+    {
+      "name": "scene01_patch03_sentinel2.png",
+      "dimensions": "192x192",
+      "has_mask": true,
+      "mask_name": "scene01_patch03_mask.png",
+      "preview_url": "/api/model-lab/datasets/ds-western-ghats-benchmark/previews/scene01_patch03_preview.jpg"
+    },
+    {
+      "name": "scene01_patch04_sentinel2.png",
+      "dimensions": "192x192",
+      "has_mask": true,
+      "mask_name": "scene01_patch04_mask.png",
+      "preview_url": "/api/model-lab/datasets/ds-western-ghats-benchmark/previews/scene01_patch04_preview.jpg"
+    },
+    {
+      "name": "scene01_patch05_sentinel2.png",
+      "dimensions": "192x192",
+      "has_mask": true,
+      "mask_name": "scene01_patch05_mask.png",
+      "preview_url": "/api/model-lab/datasets/ds-western-ghats-benchmark/previews/scene01_patch05_preview.jpg"
+    },
+    {
+      "name": "scene02_patch06_sentinel2.png",
+      "dimensions": "192x192",
+      "has_mask": true,
+      "mask_name": "scene02_patch06_mask.png",
+      "preview_url": "/api/model-lab/datasets/ds-western-ghats-benchmark/previews/scene02_patch06_preview.jpg"
+    },
+    {
+      "name": "scene02_patch07_sentinel2.png",
+      "dimensions": "192x192",
+      "has_mask": true,
+      "mask_name": "scene02_patch07_mask.png",
+      "preview_url": "/api/model-lab/datasets/ds-western-ghats-benchmark/previews/scene02_patch07_preview.jpg"
+    },
+    {
+      "name": "scene02_patch08_sentinel2.png",
+      "dimensions": "192x192",
+      "has_mask": true,
+      "mask_name": "scene02_patch08_mask.png",
+      "preview_url": "/api/model-lab/datasets/ds-western-ghats-benchmark/previews/scene02_patch08_preview.jpg"
+    },
+    {
+      "name": "scene02_patch09_sentinel2.png",
+      "dimensions": "192x192",
+      "has_mask": true,
+      "mask_name": "scene02_patch09_mask.png",
+      "preview_url": "/api/model-lab/datasets/ds-western-ghats-benchmark/previews/scene02_patch09_preview.jpg"
+    },
+    {
+      "name": "scene02_patch10_sentinel2.png",
+      "dimensions": "192x192",
+      "has_mask": true,
+      "mask_name": "scene02_patch10_mask.png",
+      "preview_url": "/api/model-lab/datasets/ds-western-ghats-benchmark/previews/scene02_patch10_preview.jpg"
+    }
+  ],
+  "invalid_files": []
+}

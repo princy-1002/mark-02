@@ -22,6 +22,7 @@ import {
   publishMLJobDetections,
   getMLChangeMaskUrl,
   getMLDndviUrl,
+  getMLGeoJsonUrl,
   fetchSatelliteJobs,
 } from '../../api/client';
 import type {
@@ -587,7 +588,7 @@ export const MLInferenceStudio: React.FC<MLInferenceStudioProps> = ({
                         </a>
 
                         <a
-                          href={`/api/ml/jobs/${activeJob.job_id}/geojson`}
+                          href={getMLGeoJsonUrl(activeJob.job_id)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#121c17] hover:bg-[#1a2820] text-emerald-300 border border-emerald-800/40 text-xs font-mono transition-colors"

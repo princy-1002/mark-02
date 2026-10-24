@@ -49,6 +49,19 @@ class InferenceJobResponse(BaseModel):
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
+@router.get("", tags=["ml-inference"])
+@router.get("/", tags=["ml-inference"])
+def ml_root():
+    """ML Forest Loss Inference module index."""
+    return {
+        "module": "ML Forest Loss Inference",
+        "status": "ready",
+        "model_info": "/api/ml/model-info",
+        "infer": "/api/ml/infer",
+        "jobs": "/api/ml/jobs",
+    }
+
+
 @router.get("/model-info", tags=["ml-inference"])
 def get_model_info():
     """

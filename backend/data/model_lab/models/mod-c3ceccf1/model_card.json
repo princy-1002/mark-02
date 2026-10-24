@@ -1,0 +1,28 @@
+{
+  "model_id": "mod-c3ceccf1",
+  "version": "1.0.v1912",
+  "name": "Test-UNet-Runner",
+  "architecture": "forest_segnet_light",
+  "task": "forest_loss_segmentation",
+  "dataset_id": "ds-western-ghats-benchmark",
+  "dataset_name": "ds-western-ghats-benchmark",
+  "hyperparameters": {
+    "epochs": 2,
+    "batch_size": 4,
+    "learning_rate": 0.002,
+    "optimizer": "AdamW",
+    "loss_function": "Combined_BCE_Dice"
+  },
+  "metrics": {
+    "iou": 0.0,
+    "dice": 0.0,
+    "precision": 0.0,
+    "recall": 0.0,
+    "accuracy": 0.9987
+  },
+  "weights_path": "C:\\Users\\tryna\\MARK 01\\backend\\data\\model_lab\\models\\mod-c3ceccf1\\model_weights.pt",
+  "size_bytes": 431681,
+  "status": "active",
+  "created_at": "2026-10-24T19:58:32.379284+00:00",
+  "description": "Trained on ds-western-ghats-benchmark with 2 epochs (forest_segnet_light)."
+}

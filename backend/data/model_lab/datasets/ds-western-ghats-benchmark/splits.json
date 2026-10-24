@@ -1,0 +1,40 @@
+{
+  "train": [
+    "scene01_patch01_sentinel2.png",
+    "scene01_patch02_sentinel2.png",
+    "scene01_patch03_sentinel2.png",
+    "scene01_patch04_sentinel2.png",
+    "scene01_patch05_sentinel2.png",
+    "scene02_patch06_sentinel2.png",
+    "scene02_patch07_sentinel2.png",
+    "scene02_patch08_sentinel2.png",
+    "scene02_patch09_sentinel2.png",
+    "scene02_patch10_sentinel2.png",
+    "scene06_patch26_sentinel2.png",
+    "scene06_patch27_sentinel2.png",
+    "scene06_patch28_sentinel2.png",
+    "scene06_patch29_sentinel2.png",
+    "scene06_patch30_sentinel2.png",
+    "scene03_patch11_sentinel2.png",
+    "scene03_patch12_sentinel2.png",
+    "scene03_patch13_sentinel2.png",
+    "scene03_patch14_sentinel2.png",
+    "scene03_patch15_sentinel2.png"
+  ],
+  "val": [
+    "scene05_patch21_sentinel2.png",
+    "scene05_patch22_sentinel2.png",
+    "scene05_patch23_sentinel2.png",
+    "scene05_patch24_sentinel2.png",
+    "scene05_patch25_sentinel2.png"
+  ],
+  "test": [
+    "scene04_patch16_sentinel2.png",
+    "scene04_patch17_sentinel2.png",
+    "scene04_patch18_sentinel2.png",
+    "scene04_patch19_sentinel2.png",
+    "scene04_patch20_sentinel2.png"
+  ],
+  "spatial_grouping_active": true,
+  "updated_at": "2026-10-24T19:58:28.067170+00:00"
+}

@@ -45,6 +45,27 @@ inference_pipeline = InferencePipeline()
 
 # ─── System & Capabilities ───────────────────────────────────────────────────
 
+@router.get("", tags=["ai-model-lab"])
+@router.get("/", tags=["ai-model-lab"])
+def model_lab_root():
+    """Module service index for AI Model Lab."""
+    return {
+        "module": "CL-01 AI Model Lab",
+        "status": "ready",
+        "endpoints": {
+            "info": "/api/model-lab/info",
+            "architectures": "/api/model-lab/architectures",
+            "datasets": "/api/model-lab/datasets",
+            "upload_dataset": "/api/model-lab/datasets/upload",
+            "prepare_dataset": "/api/model-lab/datasets/prepare",
+            "start_training": "/api/model-lab/training/start",
+            "jobs": "/api/model-lab/jobs",
+            "models": "/api/model-lab/models",
+            "inference": "/api/model-lab/inference/predict",
+        },
+    }
+
+
 @router.get("/info", tags=["ai-model-lab"])
 def get_model_lab_info():
     """Returns runtime capabilities, compute devices, and active AI model architectures."""

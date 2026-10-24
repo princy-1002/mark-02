@@ -3,7 +3,7 @@ import type { AlertRecord, VerificationEvent } from '../../types/verification';
 import { DEMO_ALERT_RECORDS, DEMO_MONITORING_RUNS, DEMO_VERIFICATION_EVENTS } from '../../data/verificationData';
 import { DemoBadge } from '../common/Badge';
 import { Button } from '../common/Button';
-import { fetchAlerts, patchAlertStatus } from '../../api/client';
+import { fetchAlerts, patchAlertStatus, formatApiErrorMessage } from '../../api/client';
 import {
   Bell,
   ArrowLeft,
@@ -52,6 +52,20 @@ const RUN_STATUS_CONFIG = {
 const LOCAL_STORAGE_KEY = 'cl01_alert_records_state';
 
 export const AlertsView: React.FC<AlertsViewProps> = ({ onBackToOverview, onNavigateToMap }) => {
+  // Use API data when available, fall back to localStorage → demo data
+  const [alerts, setAlerts] = useState<AlertRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn("Could not parse saved alerts from localStorage:", e);
+    }
+    return DEMO_ALERT_RECORDS;
+  });
+
   // ── API state — store as AlertRecord[] so the rest of the view needs no changes
   const [apiLoading, setApiLoading] = useState(true);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -90,27 +104,13 @@ export const AlertsView: React.FC<AlertsViewProps> = ({ onBackToOverview, onNavi
       })
       .catch(err => {
         console.warn('[AlertsView] API unavailable — falling back to demo data:', err);
-        setApiError(err instanceof Error ? err.message : String(err));
+        setApiError(formatApiErrorMessage(err));
         setApiOnline(false);
         setApiLoading(false);
       });
   }, []);
 
   useEffect(() => { loadFromApi(); }, [loadFromApi]);
-
-  // Use API data when available, fall back to localStorage → demo data
-  const [alerts, setAlerts] = useState<AlertRecord[]>(() => {
-    try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {
-      console.warn("Could not parse saved alerts from localStorage:", e);
-    }
-    return DEMO_ALERT_RECORDS;
-  });
 
 
   const [activeTab, setActiveTab] = useState<'alerts' | 'monitoring' | 'integration'>('alerts');

@@ -23,20 +23,81 @@
  *   forwarded to the local FastAPI backend.
  */
 const envApiUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
-export const API_BASE_URL: string = envApiUrl ? envApiUrl.trim().replace(/\/+$/, '') : '';
 
-// ─── Error type ──────────────────────────────────────────────────────────────
-
-export interface ApiError extends Error {
-  statusCode: number;
-  detail: string;
+// In production, warn if attempting to connect to localhost over HTTPS
+if (import.meta.env.PROD && envApiUrl && /https?:\/\/(localhost|127\.0\.0\.1)/i.test(envApiUrl)) {
+  console.warn(
+    '[CL-01 API] Production build configured with localhost backend URL. In production, configure VITE_API_BASE_URL to your deployed HTTPS backend URL (e.g., https://cl01-api.onrender.com) in your hosting dashboard.'
+  );
 }
 
-export function makeApiError(statusCode: number, detail: string): ApiError {
-  const err = new Error(`API ${statusCode}: ${detail}`) as ApiError;
+export const API_BASE_URL: string = envApiUrl ? envApiUrl.trim().replace(/\/+$/, '') : '';
+
+// ─── Error categorization & types ────────────────────────────────────────────
+
+export type ApiErrorCategory =
+  | 'unavailable'   // Connection refused, server offline, network down, CORS failure
+  | 'not_found'     // HTTP 404
+  | 'unauthorized'  // HTTP 401 / 403
+  | 'validation'    // HTTP 400 / 422
+  | 'server_error'  // HTTP 500 / 502 / 503 / 504
+  | 'timeout'       // AbortController client timeout
+  | 'parse_error'   // Malformed JSON response
+  | 'unknown';
+
+export interface ApiError extends Error {
+  name: 'ApiError';
+  statusCode: number;
+  category: ApiErrorCategory;
+  detail: string;
+  url: string;
+  isRetryable: boolean;
+  timestamp: string;
+}
+
+function resolveCategory(statusCode: number): ApiErrorCategory {
+  if (statusCode === 404) return 'not_found';
+  if (statusCode === 401 || statusCode === 403) return 'unauthorized';
+  if (statusCode === 400 || statusCode === 422) return 'validation';
+  if (statusCode === 408) return 'timeout';
+  if (statusCode === 503 || statusCode === 0) return 'unavailable';
+  if (statusCode >= 500) return 'server_error';
+  return 'unknown';
+}
+
+function extractDetail(body: any, fallback: string): string {
+  if (!body) return fallback;
+  if (typeof body === 'string') return body;
+  if (typeof body.detail === 'string') return body.detail;
+  if (Array.isArray(body.detail)) {
+    return body.detail
+      .map((item: any) => {
+        const loc = Array.isArray(item.loc) ? item.loc.filter((x: any) => x !== 'body').join('.') : '';
+        return loc ? `${loc}: ${item.msg}` : (item.msg || JSON.stringify(item));
+      })
+      .join('; ');
+  }
+  if (typeof body.error === 'string') return body.error;
+  if (typeof body.message === 'string') return body.message;
+  return fallback;
+}
+
+export function makeApiError(
+  statusCode: number,
+  detail: string,
+  url: string = '',
+  categoryOverride?: ApiErrorCategory,
+): ApiError {
+  const category = categoryOverride ?? resolveCategory(statusCode);
+  const isRetryable = category === 'unavailable' || category === 'timeout' || statusCode >= 500;
+  const err = new Error(`API ${statusCode} [${category}]: ${detail}`) as ApiError;
   err.name = 'ApiError';
   err.statusCode = statusCode;
+  err.category = category;
   err.detail = detail;
+  err.url = url;
+  err.isRetryable = isRetryable;
+  err.timestamp = new Date().toISOString();
   return err;
 }
 
@@ -44,34 +105,138 @@ export function isApiError(err: unknown): err is ApiError {
   return err instanceof Error && err.name === 'ApiError';
 }
 
-// ─── Core fetch wrapper ───────────────────────────────────────────────────────
+export function formatApiErrorMessage(err: unknown): string {
+  if (isApiError(err)) {
+    switch (err.category) {
+      case 'unavailable':
+        return `Backend Service Unavailable — The FastAPI backend is unreachable. Make sure the local backend is running (py -m uvicorn backend.main:app --port 8000) or check the configured backend URL.`;
+      case 'not_found':
+        return `API Endpoint Not Found (HTTP 404) — The requested route does not exist (${err.url}).`;
+      case 'unauthorized':
+        return `Authentication Required (HTTP ${err.statusCode}) — Access denied.`;
+      case 'validation':
+        return `Validation Error (HTTP ${err.statusCode}) — ${err.detail}`;
+      case 'timeout':
+        return `Request Timeout (HTTP 408) — The server took longer than 25 seconds to respond.`;
+      case 'server_error':
+        return `Backend Server Error (HTTP ${err.statusCode}) — ${err.detail || 'Internal server error occurred.'}`;
+      default:
+        return `API Error (${err.statusCode}): ${err.detail}`;
+    }
+  }
+  if (err instanceof Error) {
+    if (err.message.includes('fetch') || err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+      return 'Backend Service Unavailable — FastAPI ML backend is unreachable. Make sure the local backend is running (py -m uvicorn backend.main:app --port 8000).';
+    }
+    return err.message;
+  }
+  return String(err);
+}
 
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+// ─── Core fetch wrapper with timeout & transient retries ─────────────────────
+
+export interface ApiFetchOptions extends RequestInit {
+  timeoutMs?: number;
+  retries?: number;
+}
+
+export async function apiFetch<T>(path: string, options?: ApiFetchOptions): Promise<T> {
+  const { timeoutMs = 25000, retries = 1, ...init } = options || {};
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   const url = `${API_BASE_URL}${normalizedPath}`;
-  const response = await fetch(url, {
-    headers: { Accept: 'application/json', ...init?.headers },
-    ...init,
-  });
+  const method = (init.method || 'GET').toUpperCase();
+  const isIdempotent = method === 'GET' || method === 'HEAD' || method === 'OPTIONS';
+  const maxAttempts = isIdempotent ? Math.max(1, retries + 1) : 1;
 
-  if (!response.ok) {
-    let detail = response.statusText;
-    try {
-      const errBody = await response.json();
-      detail = errBody?.detail ?? errBody?.error ?? detail;
-    } catch {
-      // body is not JSON; keep statusText
+  let lastError: ApiError | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const controller = new AbortController();
+    let isTimedOut = false;
+    const timer = setTimeout(() => {
+      isTimedOut = true;
+      controller.abort();
+    }, timeoutMs);
+
+    // Merge caller signals if any
+    if (init.signal) {
+      init.signal.addEventListener('abort', () => controller.abort());
     }
-    throw makeApiError(response.status, detail);
+
+    try {
+      const response = await fetch(url, {
+        headers: { Accept: 'application/json', ...init.headers },
+        ...init,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timer);
+
+      if (!response.ok) {
+        let detail = response.statusText;
+        try {
+          const errBody = await response.json();
+          detail = extractDetail(errBody, detail);
+        } catch {
+          // Response body is not JSON; keep statusText
+        }
+        const apiErr = makeApiError(response.status, detail, url);
+        if (apiErr.isRetryable && attempt < maxAttempts) {
+          lastError = apiErr;
+          await new Promise((r) => setTimeout(r, attempt * 400));
+          continue;
+        }
+        throw apiErr;
+      }
+
+      // For CSV / plain text content
+      const ct = response.headers.get('content-type') ?? '';
+      if (ct.includes('text/csv') || ct.includes('text/plain')) {
+        return (await response.text()) as unknown as T;
+      }
+
+      return (await response.json()) as Promise<T>;
+    } catch (err: unknown) {
+      clearTimeout(timer);
+
+      if (isApiError(err)) {
+        if (err.isRetryable && attempt < maxAttempts) {
+          lastError = err;
+          await new Promise((r) => setTimeout(r, attempt * 400));
+          continue;
+        }
+        throw err;
+      }
+
+      // Network failures, CORS blocks, or timeouts
+      let networkErr: ApiError;
+      if (isTimedOut) {
+        networkErr = makeApiError(
+          408,
+          `Request timed out after waiting ${Math.round(timeoutMs / 1000)}s for backend response.`,
+          url,
+          'timeout'
+        );
+      } else {
+        networkErr = makeApiError(
+          503,
+          'FastAPI ML backend is unreachable. Make sure the local backend is running (py -m uvicorn backend.main:app --port 8000).',
+          url,
+          'unavailable'
+        );
+      }
+
+      if (networkErr.isRetryable && attempt < maxAttempts) {
+        lastError = networkErr;
+        await new Promise((r) => setTimeout(r, attempt * 400));
+        continue;
+      }
+
+      throw networkErr;
+    }
   }
 
-  // For CSV / binary content return as text
-  const ct = response.headers.get('content-type') ?? '';
-  if (ct.includes('text/csv')) {
-    return (await response.text()) as unknown as T;
-  }
-
-  return response.json() as Promise<T>;
+  throw lastError ?? makeApiError(500, 'Request failed unexpectedly.', url);
 }
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
@@ -633,6 +798,10 @@ export function getMLChangeMaskUrl(jobId: string): string {
 
 export function getMLDndviUrl(jobId: string): string {
   return `${API_BASE_URL}/api/ml/jobs/${encodeURIComponent(jobId)}/dndvi`;
+}
+
+export function getMLGeoJsonUrl(jobId: string): string {
+  return `${API_BASE_URL}/api/ml/jobs/${encodeURIComponent(jobId)}/geojson`;
 }
 
 

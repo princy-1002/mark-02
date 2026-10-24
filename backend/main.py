@@ -42,6 +42,7 @@ from .models import (
 from . import data_service
 from .fixtures import TREND_DATA
 
+import os
 from .satellite import router as satellite_router
 from .ml import router as ml_router
 from .model_lab import router as model_lab_router
@@ -62,10 +63,26 @@ app = FastAPI(
 
 # ─── CORS ─────────────────────────────────────────────────────────────────────
 
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+configured_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://mark-02.vercel.app",
+]
+if allowed_origins_env:
+    configured_origins.extend([o.strip() for o in allowed_origins_env.split(",") if o.strip()])
+
+is_production = os.getenv("ENVIRONMENT", "development").lower() == "production"
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=["*"] if not is_production else configured_origins,
+    allow_origin_regex=r"^https:\/\/(mark-02|cl-01)[a-zA-Z0-9_\-]*\.vercel\.app$" if is_production else None,
+    allow_credentials=False if (not is_production or "*" in configured_origins) else True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -76,8 +93,62 @@ app.include_router(satellite_router)
 app.include_router(ml_router)
 app.include_router(model_lab_router)
 
-# ─── Health ───────────────────────────────────────────────────────────────────
+# ─── Root & System Service Endpoints ──────────────────────────────────────────
 
+@app.get("/", tags=["system"])
+def root_service_status():
+    """Root service discovery and health metadata."""
+    return {
+        "service": "CL-01 Environmental Intelligence Platform API",
+        "status": "online",
+        "version": "0.9.0",
+        "environment": os.getenv("ENVIRONMENT", "development"),
+        "docs_url": "/docs",
+        "redoc_url": "/redoc",
+        "health_check": "/api/health",
+        "endpoints": {
+            "health": "/health",
+            "api_health": "/api/health",
+            "api_index": "/api",
+            "regions": "/api/regions",
+            "detections": "/api/detections",
+            "analytics_summary": "/api/analytics/summary",
+            "analytics_trends": "/api/analytics/trends",
+            "alerts": "/api/alerts",
+            "reports_export": "/api/reports/export",
+            "satellite_provider_info": "/api/satellite/provider-info",
+            "ml_model_info": "/api/ml/model-info",
+            "model_lab_info": "/api/model-lab/info",
+        },
+    }
+
+
+@app.get("/api", tags=["system"])
+def api_index():
+    """Index of primary API endpoints."""
+    return {
+        "service": "CL-01 REST API",
+        "status": "ok",
+        "version": "0.9.0",
+        "endpoints": [
+            "/api/health",
+            "/api/regions",
+            "/api/detections",
+            "/api/analytics/summary",
+            "/api/analytics/trends",
+            "/api/alerts",
+            "/api/reports/export",
+            "/api/satellite/provider-info",
+            "/api/ml/model-info",
+            "/api/model-lab/info",
+            "/api/model-lab/datasets",
+            "/api/model-lab/models",
+            "/api/model-lab/jobs",
+        ],
+    }
+
+
+@app.get("/health", response_model=HealthResponse, tags=["system"])
 @app.get("/api/health", response_model=HealthResponse, tags=["system"])
 def health_check():
     """Service health — always returns 200 if the API process is running."""
@@ -170,6 +241,19 @@ def get_detection(detection_id: str):
 
 
 # ─── Analytics ────────────────────────────────────────────────────────────────
+
+@app.get("/api/analytics", tags=["analytics"])
+def analytics_index():
+    """Index of analytics endpoints."""
+    return {
+        "module": "Analytics & Trends",
+        "status": "ready",
+        "endpoints": {
+            "summary": "/api/analytics/summary",
+            "trends": "/api/analytics/trends",
+        },
+    }
+
 
 @app.get("/api/analytics/summary", response_model=AnalyticsSummaryResponse, tags=["analytics"])
 def analytics_summary(
@@ -264,6 +348,19 @@ def update_alert_status(alert_id: str, body: AlertPatchRequest):
 
 
 # ─── Reports / Export ─────────────────────────────────────────────────────────
+
+@app.get("/api/reports", tags=["reports"])
+def reports_index():
+    """Index of report export endpoints."""
+    return {
+        "module": "Compliance Reports & Data Export",
+        "status": "ready",
+        "endpoints": {
+            "export_json": "/api/reports/export?format=json",
+            "export_csv": "/api/reports/export?format=csv",
+        },
+    }
+
 
 @app.get("/api/reports/export", tags=["reports"])
 def export_report(
