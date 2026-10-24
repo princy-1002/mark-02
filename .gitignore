@@ -47,3 +47,10 @@ backend/data/ml_outputs/*
 !backend/data/ml_jobs/.gitkeep
 !backend/data/ml_outputs/.gitkeep
 
+# Model Lab Caches & Outputs
+backend/data/model_lab/jobs/*
+!backend/data/model_lab/jobs/.gitkeep
+backend/data/model_lab/inference/*
+!backend/data/model_lab/inference/.gitkeep
+backend/data/model_lab/models/mod-*
+

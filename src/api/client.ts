@@ -1,37 +1,56 @@
 /**
  * CL-01 — Typed API client
  *
- * Base URL is read from VITE_API_BASE_URL (defaults to http://localhost:8000).
- * In development the Vite proxy re-routes /api → FastAPI automatically,
- * so most imports just call `apiFetch('/api/...')`.
+ * PRODUCTION SETUP (required):
+ *   1. Deploy the FastAPI backend (e.g. Render.com using render.yaml).
+ *   2. In Vercel dashboard → Project → Settings → Environment Variables, add:
+ *        VITE_API_BASE_URL = https://<your-render-app>.onrender.com
+ *   3. Trigger a Vercel redeploy so the new env var is baked into the bundle.
  *
- * All requests surface a typed ApiError when the server returns a non-2xx
- * status code.  Callers should handle the error explicitly — the client never
- * falls back to demo data silently.
+ * LOCAL DEVELOPMENT:
+ *   The Vite dev server proxy (vite.config.ts) forwards /api/* → localhost:8000
+ *   automatically. No VITE_API_BASE_URL is needed locally when using `npm run dev`.
+ *
+ * IMPORTANT: Never set VITE_API_BASE_URL=http://localhost:8000 in production.
+ *   Browsers block mixed-content (HTTPS page → HTTP localhost) and localhost
+ *   is not reachable from other users' machines.
  */
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-/**
- * Base URL for all API requests.
- * Reads from VITE_API_BASE_URL when specified.
- * When VITE_API_BASE_URL is not set (such as default production Vercel builds):
- * - Defaults to empty string "" so that requests use same-origin relative URLs (/api/...).
- *   This eliminates Mixed Content blocks (HTTPS -> HTTP) and connection refused errors
- *   caused by hardcoding localhost in deployed environments.
- * - In local development with the Vite proxy, relative requests (/api/...) are automatically
- *   forwarded to the local FastAPI backend.
- */
-const envApiUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
+const _rawEnvUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
 
-// In production, warn if attempting to connect to localhost over HTTPS
-if (import.meta.env.PROD && envApiUrl && /https?:\/\/(localhost|127\.0\.0\.1)/i.test(envApiUrl)) {
-  console.warn(
-    '[CL-01 API] Production build configured with localhost backend URL. In production, configure VITE_API_BASE_URL to your deployed HTTPS backend URL (e.g., https://cl01-api.onrender.com) in your hosting dashboard.'
+// Hard block: reject localhost/127.0.0.1 in production builds — they will
+// always fail for every user except the developer who set the variable.
+if (import.meta.env.PROD && _rawEnvUrl && /https?:\/\/(localhost|127\.0\.0\.1)/i.test(_rawEnvUrl)) {
+  console.error(
+    '[CL-01 API] FATAL CONFIG: VITE_API_BASE_URL is set to a localhost URL in the production build.\n' +
+    'This means every visitor to your deployed site will get a "Backend Service Unavailable" error ' +
+    'because localhost is only reachable on your own machine.\n' +
+    'Fix: In your Vercel dashboard → Project → Settings → Environment Variables, ' +
+    'set VITE_API_BASE_URL to your deployed backend HTTPS URL ' +
+    '(e.g. https://cl01-api.onrender.com) then redeploy.'
   );
 }
 
-export const API_BASE_URL: string = envApiUrl ? envApiUrl.trim().replace(/\/+$/, '') : '';
+if (import.meta.env.PROD && !_rawEnvUrl) {
+  console.warn(
+    '[CL-01 API] VITE_API_BASE_URL is not set in the production build.\n' +
+    'API calls will use same-origin relative URLs (/api/...).\n' +
+    'This only works if the FastAPI backend is deployed on the same domain.\n' +
+    'For a separate backend (e.g. Render.com), set VITE_API_BASE_URL in your Vercel ' +
+    'Project → Settings → Environment Variables and redeploy.'
+  );
+}
+
+/**
+ * Resolved API base URL for all requests:
+ * - Set to deployed backend HTTPS URL in production (via Vercel env var)
+ * - Defaults to "" (same-origin) when the env var is absent
+ *   → In dev, Vite proxy forwards /api/* to localhost:8000
+ *   → In production without a separate backend, /api/* hits Vercel (404 expected)
+ */
+export const API_BASE_URL: string = _rawEnvUrl ? _rawEnvUrl.trim().replace(/\/+$/, '') : '';
 
 // ─── Error categorization & types ────────────────────────────────────────────
 
@@ -109,24 +128,38 @@ export function formatApiErrorMessage(err: unknown): string {
   if (isApiError(err)) {
     switch (err.category) {
       case 'unavailable':
-        return `Backend Service Unavailable — The FastAPI backend is unreachable. Make sure the local backend is running (py -m uvicorn backend.main:app --port 8000) or check the configured backend URL.`;
+        if (import.meta.env.PROD) {
+          return 'Backend Service Unavailable — The FastAPI backend is not reachable from this deployed site. ' +
+            'Deploy the backend (render.yaml → Render.com) and set VITE_API_BASE_URL in Vercel Project Settings, then redeploy.';
+        }
+        return 'Backend Service Unavailable — Start the local backend: py -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload';
       case 'not_found':
-        return `API Endpoint Not Found (HTTP 404) — The requested route does not exist (${err.url}).`;
+        return `API Endpoint Not Found (HTTP 404) — The route ${err.url} does not exist on the backend.`;
       case 'unauthorized':
         return `Authentication Required (HTTP ${err.statusCode}) — Access denied.`;
       case 'validation':
         return `Validation Error (HTTP ${err.statusCode}) — ${err.detail}`;
       case 'timeout':
-        return `Request Timeout (HTTP 408) — The server took longer than 25 seconds to respond.`;
+        return 'Request Timeout — The backend took too long to respond. Try again.';
       case 'server_error':
         return `Backend Server Error (HTTP ${err.statusCode}) — ${err.detail || 'Internal server error occurred.'}`;
+      case 'parse_error':
+        return err.detail.includes('HTML') || err.detail.includes('html')
+          ? 'Backend Not Configured — The API returned an HTML page instead of JSON. ' +
+            'The FastAPI backend is not deployed. Set VITE_API_BASE_URL in Vercel → Project Settings → Environment Variables ' +
+            'to your deployed Render.com backend URL and redeploy.'
+          : `Response Parse Error — The server returned an unexpected format: ${err.detail}`;
       default:
         return `API Error (${err.statusCode}): ${err.detail}`;
     }
   }
   if (err instanceof Error) {
     if (err.message.includes('fetch') || err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-      return 'Backend Service Unavailable — FastAPI ML backend is unreachable. Make sure the local backend is running (py -m uvicorn backend.main:app --port 8000).';
+      if (import.meta.env.PROD) {
+        return 'Backend Service Unavailable — The FastAPI backend is not deployed. ' +
+          'Deploy it to Render.com using render.yaml and set VITE_API_BASE_URL in Vercel Project Settings.';
+      }
+      return 'Backend Service Unavailable — Start the local backend: py -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload';
     }
     return err.message;
   }
@@ -195,7 +228,32 @@ export async function apiFetch<T>(path: string, options?: ApiFetchOptions): Prom
         return (await response.text()) as unknown as T;
       }
 
-      return (await response.json()) as Promise<T>;
+      // Detect the Vercel SPA catch-all case: server returned HTML instead of JSON.
+      // This happens when VITE_API_BASE_URL is not set and the Vercel rewrite
+      // serves index.html for /api/* requests (no backend deployed on same origin).
+      if (ct.includes('text/html')) {
+        throw makeApiError(
+          502,
+          `Server returned HTML instead of JSON for ${url}. ` +
+          'The FastAPI backend is not deployed or VITE_API_BASE_URL is not configured. ' +
+          'Deploy the backend (render.yaml → Render.com) and set VITE_API_BASE_URL in Vercel Project Settings.',
+          url,
+          'parse_error'
+        );
+      }
+
+      let parsed: T;
+      try {
+        parsed = (await response.json()) as T;
+      } catch {
+        throw makeApiError(
+          502,
+          `Response from ${url} was not valid JSON (content-type: ${ct}).`,
+          url,
+          'parse_error'
+        );
+      }
+      return parsed;
     } catch (err: unknown) {
       clearTimeout(timer);
 
@@ -218,9 +276,15 @@ export async function apiFetch<T>(path: string, options?: ApiFetchOptions): Prom
           'timeout'
         );
       } else {
+        // Distinguish: mixed-content block (HTTPS → HTTP localhost) vs genuine network error
+        const isMixedContent = API_BASE_URL.startsWith('http://') && location.protocol === 'https:';
         networkErr = makeApiError(
           503,
-          'FastAPI ML backend is unreachable. Make sure the local backend is running (py -m uvicorn backend.main:app --port 8000).',
+          isMixedContent
+            ? `Mixed Content blocked: cannot call HTTP backend (${API_BASE_URL}) from an HTTPS page. ` +
+              'Set VITE_API_BASE_URL to an HTTPS backend URL in Vercel Project Settings.'
+            : 'FastAPI backend is unreachable. In production: deploy backend and set VITE_API_BASE_URL. ' +
+              'Locally: run py -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload',
           url,
           'unavailable'
         );
