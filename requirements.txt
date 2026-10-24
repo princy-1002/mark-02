@@ -1,5 +1,5 @@
 # Vercel Serverless Function requirements
-# Fast, lean package set (<40MB) designed for rapid Vercel serverless builds
+# Fast, lean package set (<50MB) designed for rapid Vercel serverless builds
 fastapi>=0.115.0
 pydantic>=2.8.0
 python-multipart>=0.0.9
@@ -7,4 +7,5 @@ requests>=2.31.0
 httpx>=0.27.0
 numpy>=1.26.0
 pillow>=10.0.0
+shapely>=2.0.0
 pytest>=8.0.0
