@@ -102,116 +102,153 @@ export const ComparisonViewer: React.FC<ComparisonViewerProps> = ({
   const cssFilter = SatelliteComparisonService.getBandModeFilter(bandMode);
 
   // SVG representation for Before (Dense undisturbed canopy)
-  const renderBeforeCanvas = () => (
-    <div
-      style={{
-        transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
-        transformOrigin: 'center center',
-        filter: cssFilter
-      }}
-      className="absolute inset-0 w-full h-full transition-transform duration-75 select-none"
-    >
-      <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
-        <defs>
-          <radialGradient id="beforeCanopy" cx="50%" cy="50%" r="70%">
-            <stop offset="0%" stopColor="#0b3823" />
-            <stop offset="50%" stopColor="#08291a" />
-            <stop offset="100%" stopColor="#051910" />
-          </radialGradient>
-          <pattern id="forestPatternBefore" width="40" height="40" patternUnits="userSpaceOnUse">
-            <circle cx="20" cy="20" r="14" fill="#0f452c" fillOpacity="0.7" />
-            <circle cx="36" cy="12" r="10" fill="#0d3f28" fillOpacity="0.8" />
-            <circle cx="8" cy="28" r="12" fill="#125134" fillOpacity="0.75" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#beforeCanopy)" />
-        <rect width="100%" height="100%" fill="url(#forestPatternBefore)" />
-        
-        {/* River corridor (Natural drainage) */}
-        <path
-          d="M 60,180 Q 240,240 460,200 T 820,320 T 1200,280"
-          fill="none"
-          stroke="#0369a1"
-          strokeWidth="12"
-          strokeOpacity="0.7"
-        />
+  // Canvas representation for Before (Real raster or SVG vector)
+  const renderBeforeCanvas = () => {
+    const activeUrl = bandMode === 'ndvi' && beforeScene.ndviUrl ? beforeScene.ndviUrl : beforeScene.previewUrl;
+    return (
+      <div
+        style={{
+          transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+          transformOrigin: 'center center',
+          filter: activeUrl && bandMode === 'ndvi' ? 'none' : cssFilter
+        }}
+        className="absolute inset-0 w-full h-full transition-transform duration-75 select-none"
+      >
+        {activeUrl ? (
+          <div className="relative w-full h-full flex items-center justify-center bg-[#07110b]">
+            <img
+              src={activeUrl}
+              alt="Sentinel-2 Baseline"
+              className="w-full h-full object-cover pointer-events-none"
+            />
+            {beforeScene.isRealIngested && (
+              <div className="absolute top-4 left-4 bg-black/85 backdrop-blur-md px-2.5 py-1 rounded border border-emerald-500/40 text-[11px] font-mono text-emerald-300 shadow-lg">
+                🛰️ REAL S2 L2A BOA • {beforeScene.acquisitionDate} • Cloud: {beforeScene.cloudCoverPct}%
+              </div>
+            )}
+          </div>
+        ) : (
+          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+            <defs>
+              <radialGradient id="beforeCanopy" cx="50%" cy="50%" r="70%">
+                <stop offset="0%" stopColor="#0b3823" />
+                <stop offset="50%" stopColor="#08291a" />
+                <stop offset="100%" stopColor="#051910" />
+              </radialGradient>
+              <pattern id="forestPatternBefore" width="40" height="40" patternUnits="userSpaceOnUse">
+                <circle cx="20" cy="20" r="14" fill="#0f452c" fillOpacity="0.7" />
+                <circle cx="36" cy="12" r="10" fill="#0d3f28" fillOpacity="0.8" />
+                <circle cx="8" cy="28" r="12" fill="#125134" fillOpacity="0.75" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#beforeCanopy)" />
+            <rect width="100%" height="100%" fill="url(#forestPatternBefore)" />
+            
+            {/* River corridor (Natural drainage) */}
+            <path
+              d="M 60,180 Q 240,240 460,200 T 820,320 T 1200,280"
+              fill="none"
+              stroke="#0369a1"
+              strokeWidth="12"
+              strokeOpacity="0.7"
+            />
 
-        {/* Intact Primary Canopy Tag */}
-        <text x="80" y="80" fill="#34d399" fontSize="14" fontFamily="monospace" fontWeight="bold">
-          INTACT PRIMARY CANOPY (NDVI: +0.82)
-        </text>
-      </svg>
-    </div>
-  );
+            {/* Intact Primary Canopy Tag */}
+            <text x="80" y="80" fill="#34d399" fontSize="14" fontFamily="monospace" fontWeight="bold">
+              INTACT PRIMARY CANOPY (NDVI: +0.82)
+            </text>
+          </svg>
+        )}
+      </div>
+    );
+  };
 
-  // SVG representation for After (Significant clear-cut loss scar & road expansion)
-  const renderAfterCanvas = () => (
-    <div
-      style={{
-        transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
-        transformOrigin: 'center center',
-        filter: cssFilter
-      }}
-      className="absolute inset-0 w-full h-full transition-transform duration-75 select-none"
-    >
-      <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
-        <defs>
-          <radialGradient id="afterCanopy" cx="50%" cy="50%" r="70%">
-            <stop offset="0%" stopColor="#142119" />
-            <stop offset="50%" stopColor="#101a14" />
-            <stop offset="100%" stopColor="#0a120e" />
-          </radialGradient>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#afterCanopy)" />
+  // Canvas representation for After (Real raster or SVG vector)
+  const renderAfterCanvas = () => {
+    const activeUrl = bandMode === 'ndvi' && afterScene.ndviUrl ? afterScene.ndviUrl : afterScene.previewUrl;
+    return (
+      <div
+        style={{
+          transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+          transformOrigin: 'center center',
+          filter: activeUrl && bandMode === 'ndvi' ? 'none' : cssFilter
+        }}
+        className="absolute inset-0 w-full h-full transition-transform duration-75 select-none"
+      >
+        {activeUrl ? (
+          <div className="relative w-full h-full flex items-center justify-center bg-[#07110b]">
+            <img
+              src={activeUrl}
+              alt="Sentinel-2 Target"
+              className="w-full h-full object-cover pointer-events-none"
+            />
+            {afterScene.isRealIngested && (
+              <div className="absolute top-4 right-4 bg-black/85 backdrop-blur-md px-2.5 py-1 rounded border border-cyan-500/40 text-[11px] font-mono text-cyan-300 shadow-lg">
+                🛰️ REAL S2 L2A BOA • {afterScene.acquisitionDate} • Cloud: {afterScene.cloudCoverPct}%
+              </div>
+            )}
+          </div>
+        ) : (
+          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+            <defs>
+              <radialGradient id="afterCanopy" cx="50%" cy="50%" r="70%">
+                <stop offset="0%" stopColor="#142119" />
+                <stop offset="50%" stopColor="#101a14" />
+                <stop offset="100%" stopColor="#0a120e" />
+              </radialGradient>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#afterCanopy)" />
 
-        {/* River corridor */}
-        <path
-          d="M 60,180 Q 240,240 460,200 T 820,320 T 1200,280"
-          fill="none"
-          stroke="#0369a1"
-          strokeWidth="12"
-          strokeOpacity="0.7"
-        />
+            {/* River corridor */}
+            <path
+              d="M 60,180 Q 240,240 460,200 T 820,320 T 1200,280"
+              fill="none"
+              stroke="#0369a1"
+              strokeWidth="12"
+              strokeOpacity="0.7"
+            />
 
-        {/* Clear-Cut Deforestation Scar 1 */}
-        <polygon
-          points="240,110 420,95 445,210 360,265 220,230"
-          fill="#ef4444"
-          fillOpacity="0.55"
-          stroke="#ef4444"
-          strokeWidth="2.5"
-          strokeDasharray="4 2"
-        />
+            {/* Clear-Cut Deforestation Scar 1 */}
+            <polygon
+              points="240,110 420,95 445,210 360,265 220,230"
+              fill="#ef4444"
+              fillOpacity="0.55"
+              stroke="#ef4444"
+              strokeWidth="2.5"
+              strokeDasharray="4 2"
+            />
 
-        {/* Clear-Cut Deforestation Scar 2 */}
-        <polygon
-          points="560,180 720,165 745,270 610,295 540,240"
-          fill="#f97316"
-          fillOpacity="0.55"
-          stroke="#f97316"
-          strokeWidth="2.5"
-          strokeDasharray="4 2"
-        />
+            {/* Clear-Cut Deforestation Scar 2 */}
+            <polygon
+              points="560,180 720,165 745,270 610,295 540,240"
+              fill="#f97316"
+              fillOpacity="0.55"
+              stroke="#f97316"
+              strokeWidth="2.5"
+              strokeDasharray="4 2"
+            />
 
-        {/* New Linear Logging Road Extension */}
-        <path
-          d="M 120,400 L 260,230 L 440,210 L 610,295 L 850,330"
-          fill="none"
-          stroke="#fbbf24"
-          strokeWidth="4"
-          strokeDasharray="6 3"
-        />
+            {/* New Linear Logging Road Extension */}
+            <path
+              d="M 120,400 L 260,230 L 440,210 L 610,295 L 850,330"
+              fill="none"
+              stroke="#fbbf24"
+              strokeWidth="4"
+              strokeDasharray="6 3"
+            />
 
-        {/* Anomaly Callout text */}
-        <text x="250" y="180" fill="#fca5a5" fontSize="13" fontFamily="monospace" fontWeight="bold">
-          DETECTED LOSS: 142.8 ha (-0.48 NDVI)
-        </text>
-        <text x="570" y="240" fill="#fdba74" fontSize="13" fontFamily="monospace" fontWeight="bold">
-          ROAD EXPANSION: 68.5 ha
-        </text>
-      </svg>
-    </div>
-  );
+            {/* Anomaly Callout text */}
+            <text x="250" y="180" fill="#fca5a5" fontSize="13" fontFamily="monospace" fontWeight="bold">
+              DETECTED LOSS: 142.8 ha (-0.48 NDVI)
+            </text>
+            <text x="570" y="240" fill="#fdba74" fontSize="13" fontFamily="monospace" fontWeight="bold">
+              ROAD EXPANSION: 68.5 ha
+            </text>
+          </svg>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="card-panel overflow-hidden flex flex-col relative h-[560px] w-full select-none">

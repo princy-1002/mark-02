@@ -34,6 +34,14 @@ The Vite frontend dev server (`npm run dev`) proxies all `/api/*` requests to po
 | `GET` | `/api/alerts/{id}` | Single alert |
 | `PATCH` | `/api/alerts/{id}` | Update alert status / notes |
 | `GET` | `/api/reports/export` | Download CSV or JSON report |
+| `GET` | `/api/satellite/provider-info` | Sentinel-2 provider documentation & auth status |
+| `GET` | `/api/satellite/search` | Search real Sentinel-2 scenes by ROI & date range |
+| `POST` | `/api/satellite/ingest` | Submit background Sentinel-2 ingestion & preprocessing job |
+| `GET` | `/api/satellite/jobs` | List all satellite ingestion jobs |
+| `GET` | `/api/satellite/jobs/{id}` | Detailed job status, progress %, and metadata |
+| `GET` | `/api/satellite/jobs/{id}/scenes` | Acquired scene metadata for baseline and target periods |
+| `GET` | `/api/satellite/jobs/{id}/imagery/{period}/{type}` | Download georeferenced GeoTIFFs or visual PNG previews |
+| `GET` | `/api/satellite/jobs/{id}/footprints` | GeoJSON FeatureCollection of ROI and tile footprints |
 
 ### Query parameters (detection & alert endpoints)
 
@@ -88,19 +96,26 @@ Copy `.env.example` → `.env` and fill in values.
 
 ---
 
-## Current Limitations (intentional)
+## Satellite Data Ingestion (CL-01 Part 8)
+
+- **Provider**: Copernicus Data Space Ecosystem (CDSE) / Sentinel-2 L2A via ESA & Element84 Earth Search STAC (AWS Open Data).
+- **Authentication**: OAuth2 Client Credentials (`CDSE_CLIENT_ID`, `CDSE_CLIENT_SECRET`) or Open STAC access. Credentials are read strictly from backend environment variables and NEVER exposed to frontend or committed to Git.
+- **Coverage**: Global land surface (56°S to 84°N), 5-day constellation revisit frequency at equator (2-3 days at mid-latitudes).
+- **Spatial Resolution**: 10m (B02, B03, B04, B08), 20m (B05, B06, B07, B8A, B11, B12, SCL), 60m (B01, B09, B10).
+- **Request Limits**: 4 concurrent download threads, 10 catalogue requests/sec on free tier.
+- **Data Terms**: Creative Commons Attribution 4.0 International (CC BY 4.0) under EU Copernicus Sentinels Free & Open Data Policy.
+
+---
+
+## Current Status & Limitations
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| **Data storage** | ❌ Not connected | All records served from `backend/fixtures.py` in-memory |
-| **Satellite ingestion** | ❌ Not implemented | Planned: Sentinel-2 / Landsat GEE pipeline |
-| **ML inference** | ❌ Not implemented | Planned: NDVI change detection model |
-| **Authentication** | ❌ Not implemented | Required before any production deployment |
-| **Database** | ❌ Not connected | SQLAlchemy + aiosqlite are installed and ready |
-
-When the satellite pipeline is connected:
-1. Replace `backend/fixtures.py` calls in `data_service.py` with real DB queries.
-2. The API contract (routes, models, filters) does **not** need to change.
+| **Data storage** | ❌ Not connected | Detections & alerts served from in-memory fixtures |
+| **Satellite ingestion** | ✅ Connected (Part 8) | Sentinel-2 L2A ingestion, SCL cloud masking, GeoTIFF outputs, background jobs |
+| **ML inference** | ❌ Not implemented | Planned: Real change detection model on processed rasters |
+| **Authentication** | ❌ Not implemented | Required before production deployment |
+| **Database** | ❌ Not connected | SQLAlchemy + aiosqlite installed and ready |
 
 ---
 

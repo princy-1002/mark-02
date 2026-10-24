@@ -120,6 +120,15 @@ export interface SatelliteScene {
     canopyIntensity: number;
     lossScarIntensity: number;
   };
+  isRealIngested?: boolean;
+  jobId?: string;
+  previewUrl?: string;
+  ndviUrl?: string;
+  geoTiffUrl?: string;
+  sclMaskUrl?: string;
+  cloudMaskedPct?: number;
+  meanCanopyNdvi?: number;
+  downloadGeoTiffUrl?: string;
 }
 
 export type ChangeClassification = 

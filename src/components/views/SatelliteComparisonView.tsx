@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import type { 
   SpectralBandMode, 
-  ComparisonDisplayMode
+  ComparisonDisplayMode,
+  SatelliteScene
 } from '../../types/monitoring';
 import { 
-  SatelliteComparisonService, 
+  SatelliteComparisonService,
+  convertIngestedJobToScenes
 } from '../../services/satelliteComparisonService';
 import { ComparisonViewer } from '../comparison/ComparisonViewer';
 import { SceneMetadataCard } from '../comparison/SceneMetadataCard';
@@ -14,8 +16,12 @@ import {
   Layers, 
   ArrowLeft, 
   Sparkles, 
-  Satellite
+  Satellite,
+  CheckCircle2
 } from 'lucide-react';
+import { SatelliteIngestionStudio } from '../satellite/SatelliteIngestionStudio';
+import { getSatelliteImageryUrl } from '../../api/client';
+import type { IngestionJobRecord } from '../../api/client';
 
 interface SatelliteComparisonViewProps {
   onBackToOverview: () => void;
@@ -26,16 +32,23 @@ export const SatelliteComparisonView: React.FC<SatelliteComparisonViewProps> = (
 }) => {
   // Region selection for satellite pairs
   const [selectedRegionId, setSelectedRegionId] = useState<string>('western-ghats');
+  const [isIngestionStudioOpen, setIsIngestionStudioOpen] = useState(false);
+  const [customScenes, setCustomScenes] = useState<SatelliteScene[]>([]);
 
   // Available scenes for region
-  const availableScenes = useMemo(() => {
+  const staticScenes = useMemo(() => {
     return SatelliteComparisonService.getScenesForRegion(selectedRegionId);
   }, [selectedRegionId]);
 
+  const availableScenes = useMemo(() => {
+    const regionCustom = customScenes.filter(s => s.regionId === selectedRegionId);
+    return [...regionCustom, ...staticScenes];
+  }, [customScenes, selectedRegionId, staticScenes]);
+
   // Selected before and after scenes
-  const [beforeSceneId, setBeforeSceneId] = useState<string>(availableScenes[0]?.id || '');
+  const [beforeSceneId, setBeforeSceneId] = useState<string>(staticScenes[0]?.id || '');
   const [afterSceneId, setAfterSceneId] = useState<string>(
-    availableScenes[availableScenes.length - 1]?.id || ''
+    staticScenes[staticScenes.length - 1]?.id || ''
   );
 
   // Band mode & Display mode
@@ -54,6 +67,18 @@ export const SatelliteComparisonView: React.FC<SatelliteComparisonViewProps> = (
     return SatelliteComparisonService.getPresetPairs(selectedRegionId);
   }, [selectedRegionId]);
 
+  const handleJobCompleted = (job: IngestionJobRecord) => {
+    const pair = convertIngestedJobToScenes(job, getSatelliteImageryUrl);
+    if (pair) {
+      setCustomScenes(prev => [pair.before, pair.after, ...prev]);
+      setBeforeSceneId(pair.before.id);
+      setAfterSceneId(pair.after.id);
+      setSelectedRegionId(job.region_id);
+    }
+  };
+
+  const isRealIngestedActive = beforeScene?.isRealIngested || afterScene?.isRealIngested;
+
   return (
     <div className="space-y-5">
       {/* Module Mission Header */}
@@ -67,15 +92,31 @@ export const SatelliteComparisonView: React.FC<SatelliteComparisonViewProps> = (
               <h2 className="text-lg sm:text-xl font-bold text-slate-100 font-sans tracking-tight m-0">
                 Satellite Imagery Comparison Studio
               </h2>
-              <DemoBadge />
+              {isRealIngestedActive ? (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-600/50 font-mono font-bold flex items-center gap-1">
+                  <CheckCircle2 size={11} /> REAL SENTINEL-2 L2A
+                </span>
+              ) : (
+                <DemoBadge />
+              )}
             </div>
             <p className="text-xs text-slate-400 font-mono mt-0.5">
-              Synchronized bi-temporal wipe curtain & multi-spectral band inspector
+              Synchronized bi-temporal wipe curtain & multi-spectral band inspector (Sentinel-2 L2A BOA)
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Real Ingestion Studio Trigger */}
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<Satellite size={14} />}
+            onClick={() => setIsIngestionStudioOpen(true)}
+          >
+            Ingest Sentinel-2 Pair
+          </Button>
+
           {/* Region Switcher */}
           <select
             value={selectedRegionId}
@@ -103,6 +144,15 @@ export const SatelliteComparisonView: React.FC<SatelliteComparisonViewProps> = (
           </Button>
         </div>
       </div>
+
+      {/* Ingestion Studio Modal */}
+      {isIngestionStudioOpen && (
+        <SatelliteIngestionStudio
+          currentRegionId={selectedRegionId}
+          onJobCompletedAndSelect={handleJobCompleted}
+          onClose={() => setIsIngestionStudioOpen(false)}
+        />
+      )}
 
       {/* Quick Preset Comparison Pairs */}
       {presetPairs.length > 0 && (

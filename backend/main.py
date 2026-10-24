@@ -42,16 +42,19 @@ from .models import (
 from . import data_service
 from .fixtures import TREND_DATA
 
+from .satellite import router as satellite_router
+from .ml import router as ml_router
+
 # ─── App setup ────────────────────────────────────────────────────────────────
 
 app = FastAPI(
     title="CL-01 Forest Loss Detection API",
     description=(
         "REST API for the CL-01 Forest Loss Detection Platform. "
-        "Provides detection records, alert management, analytics, and report export. "
-        "⚠️ DEMO DATA — satellite ingestion and ML pipeline not yet connected."
+        "Provides detection records, alert management, analytics, report export, "
+        "Sentinel-2 satellite data ingestion, and ML bi-temporal change detection."
     ),
-    version="0.7.0",
+    version="0.9.0",
     docs_url="/docs",
     redoc_url="/redoc",
 )
@@ -67,9 +70,14 @@ app.add_middleware(
         "http://127.0.0.1:5174",
     ],
     allow_credentials=False,
-    allow_methods=["GET", "PATCH"],
+    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# ─── Routers ──────────────────────────────────────────────────────────────────
+
+app.include_router(satellite_router)
+app.include_router(ml_router)
 
 # ─── Health ───────────────────────────────────────────────────────────────────
 
@@ -78,18 +86,17 @@ def health_check():
     """Service health — always returns 200 if the API process is running."""
     return HealthResponse(
         status="ok",
-        version="0.7.0",
+        version="0.9.0",
         services={
             "api": "ok",
             "fixtures": "ok",
-            "satellite_ingestion": "not_connected",
-            "ml_inference": "not_connected",
+            "satellite_ingestion": "connected",
+            "ml_inference": "connected",
             "database": "not_connected",
         },
         disclaimer=(
-            "DEMO MODE: All data is served from in-memory demo fixtures. "
-            "Satellite ingestion and ML inference are not yet connected. "
-            "No real detection results are present."
+            "CL-01 Sentinel-2 ingestion and ML bi-temporal inference engines connected. "
+            "Real change detection polygons and alerts can be processed and published on demand."
         ),
     )
 

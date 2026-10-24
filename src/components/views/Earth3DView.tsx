@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { Viewer } from 'cesium';
 import { CesiumEarthViewer } from '../earth3d/CesiumEarthViewer';
 import { GlobeControlPanel } from '../earth3d/GlobeControlPanel';
@@ -12,7 +12,8 @@ import {
   ShieldAlert,
   AlertTriangle,
   CircleDashed,
-  Flame
+  Flame,
+  BrainCircuit
 } from 'lucide-react';
 import { MapLayerFilterPanel } from '../earth3d/MapLayerFilterPanel';
 import type { GlobalFilterState } from '../../types/layersAndFilters';
@@ -26,6 +27,7 @@ import type {
 import { DEMO_VERIFICATION_EVENTS } from '../../data/verificationData';
 import { MONITORED_REGIONS } from '../../data/demoData';
 import type { VerificationOutcome } from '../../types/verification';
+import { fetchMLJobs, fetchMLJobGeoJson } from '../../api/client';
 
 interface Earth3DViewProps {
   onBackToOverview: () => void;
@@ -97,6 +99,26 @@ export const Earth3DView: React.FC<Earth3DViewProps> = ({
   // Picked region state
   const [selectedLossRegion, setSelectedLossRegion] = useState<ForestLossGeoJsonProperties | null>(null);
   const [selectedCoverRegion, setSelectedCoverRegion] = useState<ForestCoverGeoJsonProperties | null>(null);
+
+  // ML real detections GeoJSON for 3D globe overlay
+  const [mlGeoJson, setMlGeoJson] = useState<Record<string, any> | null>(null);
+  const [showMLDetections, setShowMLDetections] = useState(true);
+  const [mlJobCount, setMlJobCount] = useState(0);
+
+  // On mount: load most recent completed ML inference job GeoJSON for globe
+  useEffect(() => {
+    fetchMLJobs()
+      .then(async (jobs) => {
+        const completed = jobs.filter(j => j.status === 'completed' && j.detections_count > 0);
+        setMlJobCount(completed.length);
+        if (completed.length > 0) {
+          // Load GeoJSON from the most recent completed job
+          const geoJson = await fetchMLJobGeoJson(completed[0].job_id);
+          setMlGeoJson(geoJson);
+        }
+      })
+      .catch(() => { /* ML endpoint may not be running */ });
+  }, []);
 
   // Cesium viewer instance reference for direct camera controls
   const viewerInstanceRef = useRef<Viewer | null>(null);
@@ -229,6 +251,8 @@ export const Earth3DView: React.FC<Earth3DViewProps> = ({
           onSelectLossRegion={(props) => setSelectedLossRegion(props)}
           onSelectCoverRegion={(props) => setSelectedCoverRegion(props)}
           onViewerReady={(v) => { viewerInstanceRef.current = v; }}
+          mlGeoJson={mlGeoJson}
+          showMLDetections={showMLDetections}
         />
 
         {/* Floating Top Right: Map Controls Panel */}
@@ -277,9 +301,24 @@ export const Earth3DView: React.FC<Earth3DViewProps> = ({
               Cesium Ion Satellite &amp; World Terrain Token: <strong className="text-slate-300">VITE_CESIUM_ION_TOKEN</strong> (configured with automatic fallback to Esri World Imagery &amp; OSM)
             </span>
           </div>
-          <span className="text-[11px] text-emerald-400 font-semibold shrink-0">
-            Click on any highlighted forest loss polygon or pin to inspect anomaly metrics
-          </span>
+          <div className="flex items-center gap-2">
+            {mlGeoJson && (
+              <button
+                onClick={() => setShowMLDetections(!showMLDetections)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-mono transition-all ${
+                  showMLDetections
+                    ? 'bg-emerald-950/70 text-emerald-300 border-emerald-700/50'
+                    : 'bg-[#121c17] text-slate-400 border-[#203126]'
+                }`}
+              >
+                <BrainCircuit size={12} />
+                ML Detections ({mlJobCount} job{mlJobCount !== 1 ? 's' : ''})
+              </button>
+            )}
+            <span className="text-[11px] text-emerald-400 font-semibold shrink-0">
+              Click on any highlighted forest loss polygon or pin to inspect anomaly metrics
+            </span>
+          </div>
         </div>
       )}
 

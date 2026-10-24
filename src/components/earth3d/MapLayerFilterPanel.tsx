@@ -267,6 +267,22 @@ export const MapLayerFilterPanel: React.FC<MapLayerFilterPanelProps> = ({
             </div>
             <EyeOff size={13} className="text-slate-600" />
           </div>
+
+          {/* Sentinel-2 Ingestion Pipeline Status (Part 8) */}
+          <div className="p-2.5 rounded-lg border border-emerald-900/40 bg-[#09150e] text-[11px] font-mono text-slate-300 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-emerald-400 font-bold flex items-center gap-1.5">
+                <Satellite size={12} />
+                Sentinel-2 L2A Ingestion
+              </span>
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-600/40 font-semibold">
+                Connected (Part 8)
+              </span>
+            </div>
+            <div className="text-[10px] text-slate-400 leading-tight">
+              Copernicus CDSE &amp; AWS Open Data STAC. Cloud masking &amp; GeoTIFF outputs ready.
+            </div>
+          </div>
         </div>
       )}
 

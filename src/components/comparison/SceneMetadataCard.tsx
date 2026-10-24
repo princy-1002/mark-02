@@ -114,10 +114,38 @@ export const SceneMetadataCard: React.FC<SceneMetadataCardProps> = ({
           <span className="text-slate-300">{scene.spatialResolution}</span>
         </div>
 
-        <div className="flex items-center justify-between py-1">
+        <div className="flex items-center justify-between py-1 border-b border-[#16231c]">
           <span className="text-slate-400">Tile Footprint:</span>
           <span className="text-slate-400 font-mono text-[10px] truncate max-w-[160px]">{scene.tileId}</span>
         </div>
+
+        {scene.isRealIngested && (
+          <>
+            <div className="flex items-center justify-between py-1 border-b border-[#16231c] bg-emerald-950/20 px-1.5 rounded">
+              <span className="text-emerald-400 font-semibold">SCL Masked Noise:</span>
+              <span className="text-emerald-300 font-bold">{scene.cloudMaskedPct ?? scene.cloudCoverPct}% pixels</span>
+            </div>
+            {scene.meanCanopyNdvi !== undefined && (
+              <div className="flex items-center justify-between py-1 border-b border-[#16231c] bg-emerald-950/20 px-1.5 rounded">
+                <span className="text-emerald-400 font-semibold">Mean Canopy NDVI:</span>
+                <span className="text-emerald-300 font-bold">+{scene.meanCanopyNdvi.toFixed(3)}</span>
+              </div>
+            )}
+            {scene.geoTiffUrl && (
+              <div className="pt-2">
+                <a
+                  href={scene.geoTiffUrl}
+                  download={`sentinel2_${label.toLowerCase()}_ndvi.tif`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded bg-[#132219] hover:bg-[#1a3023] border border-emerald-600/40 text-emerald-300 text-[11px] font-mono transition-colors"
+                >
+                  📥 Export GeoTIFF Raster (.tif)
+                </a>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

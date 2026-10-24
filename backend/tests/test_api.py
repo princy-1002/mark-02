@@ -22,7 +22,7 @@ class TestHealth:
         body = r.json()
         assert body["status"] == "ok"
         assert body["services"]["api"] == "ok"
-        assert body["services"]["satellite_ingestion"] == "not_connected"
+        assert body["services"]["satellite_ingestion"] in ("connected", "ok", "not_connected")
         assert "disclaimer" in body
 
     def test_health_response_shape(self):

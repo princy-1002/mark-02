@@ -34,3 +34,9 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+
+# Satellite Ingestion Caches & Outputs
+backend/data/jobs/*.json
+backend/data/satellite_outputs/*
+!backend/data/jobs/.gitkeep
+!backend/data/satellite_outputs/.gitkeep

@@ -45,6 +45,35 @@ def _in_date_range(detected_date_str: str, date_range: str, start_date: Optional
     return True
 
 
+# Dynamic in-memory store for real ML inference detections
+_DYNAMIC_DETECTIONS: list[dict] = []
+_DYNAMIC_ALERTS: list[dict] = []
+
+
+def add_real_detections(detections: list[dict]):
+    """Add real ML change detection results to active detections store."""
+    existing_ids = {d["id"] for d in _DYNAMIC_DETECTIONS} | {d["id"] for d in DETECTIONS}
+    for d in detections:
+        if d["id"] not in existing_ids:
+            _DYNAMIC_DETECTIONS.insert(0, d)
+            existing_ids.add(d["id"])
+
+
+def add_real_alert(alert: dict):
+    """Add a real generated alert from ML detection."""
+    existing_ids = {a["id"] for a in _DYNAMIC_ALERTS} | {a["id"] for a in ALERTS}
+    if alert["id"] not in existing_ids:
+        _DYNAMIC_ALERTS.insert(0, alert)
+
+
+def get_all_detections() -> list[dict]:
+    return _DYNAMIC_DETECTIONS + list(DETECTIONS)
+
+
+def get_all_alerts() -> list[dict]:
+    return _DYNAMIC_ALERTS + list(ALERTS)
+
+
 # ─── Regions ─────────────────────────────────────────────────────────────────
 
 def get_regions():
@@ -67,7 +96,7 @@ def filter_detections(
     page: int = 1,
     page_size: int = 20,
 ):
-    results = list(DETECTIONS)
+    results = get_all_detections()
 
     if region_id and region_id != "all":
         results = [d for d in results if d["regionId"] == region_id]
@@ -99,7 +128,7 @@ def filter_detections(
 
 
 def get_detection_by_id(detection_id: str):
-    return next((d for d in DETECTIONS if d["id"] == detection_id), None)
+    return next((d for d in get_all_detections() if d["id"] == detection_id), None)
 
 
 # ─── Analytics ───────────────────────────────────────────────────────────────
@@ -180,7 +209,7 @@ def filter_alerts(
     page: int = 1,
     page_size: int = 20,
 ):
-    results = list(ALERTS)
+    results = get_all_alerts()
 
     if region_id and region_id != "all":
         results = [a for a in results if a["regionId"] == region_id]
@@ -225,15 +254,14 @@ def filter_alerts(
 
 
 def get_alert_by_id(alert_id: str):
-    return next((a for a in ALERTS if a["id"] == alert_id), None)
+    return next((a for a in get_all_alerts() if a["id"] == alert_id), None)
 
 
 def patch_alert(alert_id: str, status: str, notes: Optional[str]) -> Optional[dict]:
     """
-    In-memory patch for demo purposes.
-    Real implementation would write to a database.
+    In-memory patch for alert records.
     """
-    alert = next((a for a in ALERTS if a["id"] == alert_id), None)
+    alert = next((a for a in get_all_alerts() if a["id"] == alert_id), None)
     if alert is None:
         return None
     alert["status"] = status

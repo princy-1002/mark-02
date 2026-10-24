@@ -210,12 +210,46 @@ export const DEMO_DETECTION_RESULTS: DetectionPolygonResult[] = [
   }
 ];
 
+let dynamicDetections: DetectionPolygonResult[] = [];
+
 export class DetectionService {
+  /**
+   * Adds real dynamically published detections from ML inference
+   */
+  static addDynamicDetections(items: DetectionPolygonResult[]) {
+    const existingIds = new Set([
+      ...DEMO_DETECTION_RESULTS.map(d => d.id),
+      ...dynamicDetections.map(d => d.id)
+    ]);
+    const toAdd = items.filter(d => !existingIds.has(d.id));
+    dynamicDetections = [...toAdd, ...dynamicDetections];
+  }
+
+  /**
+   * Syncs real detections published in the backend API
+   */
+  static async syncFromBackend(): Promise<number> {
+    try {
+      const res = await fetch('/api/detections?dateRange=ytd&pageSize=100');
+      if (!res.ok) return 0;
+      const data = await res.json();
+      if (Array.isArray(data.items)) {
+        const dynamicItems = data.items.filter((item: any) => item.id && item.id.startsWith('DET-ML-'));
+        this.addDynamicDetections(dynamicItems);
+        return dynamicItems.length;
+      }
+    } catch (e) {
+      console.warn('Could not sync dynamic detections from backend:', e);
+    }
+    return 0;
+  }
+
   /**
    * Retrieves filtered detection polygon results
    */
   static getDetections(filters: DetectionFilterState): DetectionPolygonResult[] {
-    return DEMO_DETECTION_RESULTS.filter(item => {
+    const all = [...dynamicDetections, ...DEMO_DETECTION_RESULTS];
+    return all.filter(item => {
       // Region filter
       if (filters.regionId && filters.regionId !== 'all') {
         if (item.regionId !== filters.regionId) return false;

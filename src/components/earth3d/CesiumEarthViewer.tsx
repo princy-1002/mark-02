@@ -53,6 +53,9 @@ interface CesiumEarthViewerProps {
   onSelectLossRegion: (props: ForestLossGeoJsonProperties | null) => void;
   onSelectCoverRegion: (props: ForestCoverGeoJsonProperties | null) => void;
   onViewerReady?: (viewer: Viewer) => void;
+  /** Optional GeoJSON FeatureCollection from ML inference to overlay as real detection polygons */
+  mlGeoJson?: Record<string, any> | null;
+  showMLDetections?: boolean;
 }
 
 export const CesiumEarthViewer: React.FC<CesiumEarthViewerProps> = ({
@@ -71,7 +74,9 @@ export const CesiumEarthViewer: React.FC<CesiumEarthViewerProps> = ({
   isAutoRotating,
   onSelectLossRegion,
   onSelectCoverRegion,
-  onViewerReady
+  onViewerReady,
+  mlGeoJson = null,
+  showMLDetections = true,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
@@ -80,6 +85,7 @@ export const CesiumEarthViewer: React.FC<CesiumEarthViewerProps> = ({
   const lossDataSourceRef = useRef<GeoJsonDataSource | null>(null);
   const pinsDataSourceRef = useRef<GeoJsonDataSource | null>(null);
   const boundariesDataSourceRef = useRef<GeoJsonDataSource | null>(null);
+  const mlDataSourceRef = useRef<GeoJsonDataSource | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
@@ -408,6 +414,66 @@ export const CesiumEarthViewer: React.FC<CesiumEarthViewerProps> = ({
       entity.show = filterEntity(entity);
     });
   }, [selectedSeverity, minAreaHa, maxAreaHa, dateRange, startDate, endDate]);
+
+  // Load / refresh ML inference GeoJSON polygons when mlGeoJson prop changes
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || viewer.isDestroyed()) return;
+
+    // Remove previous ML layer
+    if (mlDataSourceRef.current) {
+      viewer.dataSources.remove(mlDataSourceRef.current, true);
+      mlDataSourceRef.current = null;
+    }
+
+    if (!mlGeoJson || !showMLDetections) return;
+
+    const loadMLLayer = async () => {
+      try {
+        const mlSource = await GeoJsonDataSource.load(mlGeoJson as any, { strokeWidth: 2.5 });
+
+        mlSource.entities.values.forEach((entity: Entity) => {
+          const currentTime = viewer?.clock.currentTime;
+          const props = currentTime ? entity.properties?.getValue(currentTime) : undefined;
+          const severity = props?.severity || 'critical';
+
+          let fillColor = Color.fromCssColorString('#ef4444').withAlpha(0.72); // Critical: Red
+          let strokeColor = Color.fromCssColorString('#ef4444');
+
+          if (severity === 'high') {
+            fillColor = Color.fromCssColorString('#f97316').withAlpha(0.72);
+            strokeColor = Color.fromCssColorString('#f97316');
+          } else if (severity === 'moderate') {
+            fillColor = Color.fromCssColorString('#eab308').withAlpha(0.72);
+            strokeColor = Color.fromCssColorString('#eab308');
+          }
+
+          if (entity.polygon) {
+            entity.polygon.material = fillColor as any;
+            entity.polygon.outline = true as any;
+            entity.polygon.outlineColor = strokeColor as any;
+            entity.polygon.height = 150 as any; // slightly higher z than demo layer
+          }
+        });
+
+        if (!viewer.isDestroyed()) {
+          viewer.dataSources.add(mlSource);
+          mlDataSourceRef.current = mlSource;
+        }
+      } catch (err) {
+        console.warn('Failed to load ML GeoJSON overlay into Cesium:', err);
+      }
+    };
+
+    loadMLLayer();
+  }, [mlGeoJson, showMLDetections]);
+
+  // Toggle ML layer show/hide
+  useEffect(() => {
+    if (mlDataSourceRef.current) {
+      mlDataSourceRef.current.show = showMLDetections ?? true;
+    }
+  }, [showMLDetections]);
 
   // Camera fly-to when active preset changes
   useEffect(() => {

@@ -1,0 +1,33 @@
+{
+  "inference_job_id": "job_ml_0aaaa3181e",
+  "model_id": "CL01-dNDVI-S2",
+  "model_version": "1.0.0",
+  "region_id": "western-ghats",
+  "crs": "EPSG:4326",
+  "bbox": [
+    76.5,
+    11.5,
+    76.7,
+    11.7
+  ],
+  "source_rasters": {
+    "before": "S2C_43PFP_20260130_0_L2A_NDVI_masked.tif",
+    "after": "S2C_43PFN_20260219_0_L2A_NDVI_masked.tif"
+  },
+  "output_files": {
+    "change_mask_geotiff": "change_mask.tif",
+    "d_ndvi_geotiff": "d_ndvi.tif",
+    "detections_geojson": "detections.geojson"
+  },
+  "execution_completed_at": "2026-10-24T15:25:24.253790+00:00",
+  "summary_stats": {
+    "total_valid_pixels": 63828,
+    "cloud_or_nodata_pixels": 1708,
+    "total_patches_detected": 339,
+    "total_loss_area_hectares": 2351.48,
+    "critical_patches": 339,
+    "high_patches": 0,
+    "moderate_patches": 0
+  },
+  "confidence_explanation": "Calibrated composite (0.0 to 1.0) reflecting magnitude of spectral deficit, spatial patch cohesion, and pre-event canopy density."
+}

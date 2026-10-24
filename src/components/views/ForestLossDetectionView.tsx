@@ -23,9 +23,11 @@ import {
   ShieldCheck,
   Info,
   ZapOff,
-  TrendingDown
+  TrendingDown,
+  BrainCircuit
 } from 'lucide-react';
 import { DemoBadge } from '../common/Badge';
+import { MLInferenceStudio } from '../ml/MLInferenceStudio';
 
 import type { GlobalFilterState } from '../../types/layersAndFilters';
 
@@ -105,8 +107,15 @@ export const ForestLossDetectionView: React.FC<ForestLossDetectionViewProps> = (
 
   const [selectedDetection, setSelectedDetection] = useState<DetectionPolygonResult | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [showMLStudio, setShowMLStudio] = useState(false);
+  const [refreshCount, setRefreshCount] = useState(0);
 
-  const detections = useMemo(() => DetectionService.getDetections(filters), [filters]);
+  // Sync any real published detections from backend on mount
+  React.useEffect(() => {
+    DetectionService.syncFromBackend().then(() => setRefreshCount(c => c + 1));
+  }, []);
+
+  const detections = useMemo(() => DetectionService.getDetections(filters), [filters, refreshCount]);
   const summary = useMemo(() => DetectionService.getSummaryMetrics(detections), [detections]);
 
   const currentRegionLabel = REGION_OPTIONS.find(r => r.value === filters.regionId)?.label ?? 'All Regions';
@@ -162,6 +171,14 @@ export const ForestLossDetectionView: React.FC<ForestLossDetectionViewProps> = (
 
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setShowMLStudio(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all bg-emerald-950/80 text-emerald-300 border-emerald-700/60 hover:bg-emerald-900/90 shadow-sm"
+          >
+            <BrainCircuit size={14} className="text-emerald-400 animate-pulse" />
+            ML Inference Studio
+          </button>
+
+          <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all ${
               showFilters
@@ -178,6 +195,17 @@ export const ForestLossDetectionView: React.FC<ForestLossDetectionViewProps> = (
           </Button>
         </div>
       </div>
+
+      {/* ML Inference Studio Modal */}
+      {showMLStudio && (
+        <MLInferenceStudio
+          currentRegionId={filters.regionId}
+          onClose={() => setShowMLStudio(false)}
+          onDetectionsPublished={() => {
+            DetectionService.syncFromBackend().then(() => setRefreshCount(c => c + 1));
+          }}
+        />
+      )}
 
       {/* Expandable Filter Bar */}
       {showFilters && (
