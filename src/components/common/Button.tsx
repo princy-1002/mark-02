@@ -17,20 +17,20 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center font-medium transition-colors focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed select-none rounded-lg';
+  const baseStyles = 'inline-flex items-center justify-center font-medium transition-all focus:outline-none focus:ring-1 focus:ring-teal-400 disabled:opacity-50 disabled:cursor-not-allowed select-none rounded-xl active:scale-[0.98]';
 
   const sizeStyles = {
-    sm: 'text-xs px-2.5 py-1.5 gap-1.5',
-    md: 'text-sm px-3.5 py-2 gap-2',
-    lg: 'text-base px-4 py-2.5 gap-2.5'
+    sm: 'text-xs px-3 py-1.5 gap-1.5',
+    md: 'text-sm px-4 py-2 gap-2',
+    lg: 'text-base px-5 py-2.5 gap-2.5'
   };
 
   const variantStyles = {
-    primary: 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm shadow-emerald-950 border border-emerald-500/50',
-    secondary: 'bg-[#18221d] hover:bg-[#202e27] text-slate-200 border border-[#25362e]',
-    outline: 'bg-transparent hover:bg-[#15201a] text-slate-300 border border-[#25362e]',
-    ghost: 'bg-transparent hover:bg-[#17221c] text-slate-400 hover:text-slate-200',
-    danger: 'bg-red-950/60 hover:bg-red-900/60 text-red-200 border border-red-800/60'
+    primary: 'bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-300 hover:from-teal-300 hover:to-emerald-300 text-slate-950 font-bold border border-teal-300/80 shadow-[0_0_20px_rgba(45,212,191,0.5)]',
+    secondary: 'bg-[#0e1b15]/90 hover:bg-[#14261e] text-slate-200 border border-teal-500/30 hover:border-teal-400/60 shadow-[0_0_10px_rgba(20,184,166,0.1)]',
+    outline: 'bg-[#0c1813]/85 hover:bg-[#12231b] text-slate-100 border border-teal-500/40 hover:border-teal-400 shadow-[0_0_14px_rgba(20,184,166,0.15)]',
+    ghost: 'bg-transparent hover:bg-teal-950/40 text-slate-400 hover:text-teal-200',
+    danger: 'bg-red-950/70 hover:bg-red-900/80 text-red-200 border border-red-500/40 shadow-[0_0_12px_rgba(239,68,68,0.3)]'
   };
 
   return (

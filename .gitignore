@@ -40,3 +40,10 @@ backend/data/jobs/*.json
 backend/data/satellite_outputs/*
 !backend/data/jobs/.gitkeep
 !backend/data/satellite_outputs/.gitkeep
+
+# ML Inference Caches & Outputs
+backend/data/ml_jobs/*.json
+backend/data/ml_outputs/*
+!backend/data/ml_jobs/.gitkeep
+!backend/data/ml_outputs/.gitkeep
+

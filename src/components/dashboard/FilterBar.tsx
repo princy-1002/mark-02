@@ -36,24 +36,24 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   const isFiltered = activeCount > 0 || filters.selectedSeverity !== 'all' || filters.selectedStatus !== 'all' || !!filters.searchQuery || filters.selectedRegionId !== 'all';
 
   return (
-    <div className="card-panel p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+    <div className="card-panel p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4 text-xs font-mono border border-teal-500/30 shadow-[0_10px_30px_rgba(0,0,0,0.5),0_0_16px_rgba(20,184,166,0.12)]">
       {/* Left side: Date Range Selector */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-slate-500 uppercase tracking-wider text-[11px] flex items-center gap-1.5 font-semibold">
-          <Calendar size={13} className="text-emerald-400" />
-          Period:
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-teal-400 uppercase tracking-widest text-[11px] flex items-center gap-1.5 font-bold">
+          <Calendar size={13} className="text-teal-400" />
+          PERIOD:
         </span>
-        <div className="inline-flex rounded-lg bg-[#0e1612] p-1 border border-[#1d2b22] gap-1">
+        <div className="inline-flex rounded-xl bg-[#09130e]/95 p-1 border border-teal-500/35 gap-1 shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]">
           {dateRanges.map((range) => {
             const isActive = filters.dateRange === range.id;
             return (
               <button
                 key={range.id}
                 onClick={() => onFilterChange({ dateRange: range.id })}
-                className={`px-2.5 py-1 rounded text-xs transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
                   isActive
-                    ? 'bg-emerald-950 text-emerald-300 font-semibold border border-emerald-700/60 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-[#15201a]'
+                    ? 'bg-teal-500/25 text-teal-200 font-semibold border border-teal-400/90 shadow-[0_0_14px_rgba(20,184,166,0.35)]'
+                    : 'text-slate-400 hover:text-teal-200 hover:bg-teal-950/40 border border-transparent'
                 }`}
               >
                 {range.label}
@@ -64,36 +64,36 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       </div>
 
       {/* Center: Dropdown Filters for Severity and Status */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2.5">
         {/* Severity Filter */}
-        <div className="flex items-center gap-1.5 bg-[#0e1612] border border-[#1d2b22] rounded-lg px-2.5 py-1">
-          <span className="text-slate-500 text-[11px]">Severity:</span>
+        <div className="flex items-center gap-1.5 bg-[#09130e]/95 border border-teal-500/35 hover:border-teal-400/70 rounded-xl px-3 py-1.5 shadow-[0_0_10px_rgba(20,184,166,0.1)] transition-all">
+          <span className="text-teal-500/80 text-[11px] font-semibold">Severity:</span>
           <select
             value={filters.selectedSeverity}
             onChange={(e) => onFilterChange({ selectedSeverity: e.target.value })}
-            className="bg-transparent text-slate-200 font-mono focus:outline-none cursor-pointer"
+            className="bg-transparent text-slate-100 font-mono focus:outline-none cursor-pointer"
           >
-            <option value="all" className="bg-[#101713] text-slate-300">All Severities</option>
-            <option value="critical" className="bg-[#101713] text-red-400">Critical Only</option>
-            <option value="high" className="bg-[#101713] text-orange-400">High Only</option>
-            <option value="moderate" className="bg-[#101713] text-amber-400">Moderate</option>
-            <option value="low" className="bg-[#101713] text-emerald-400">Low Impact</option>
+            <option value="all" className="bg-[#0d1a14] text-slate-200">All Severities</option>
+            <option value="critical" className="bg-[#0d1a14] text-red-400">Critical Only</option>
+            <option value="high" className="bg-[#0d1a14] text-orange-400">High Only</option>
+            <option value="moderate" className="bg-[#0d1a14] text-amber-400">Moderate</option>
+            <option value="low" className="bg-[#0d1a14] text-teal-300">Low Impact</option>
           </select>
         </div>
 
         {/* Status Filter */}
-        <div className="flex items-center gap-1.5 bg-[#0e1612] border border-[#1d2b22] rounded-lg px-2.5 py-1">
-          <span className="text-slate-500 text-[11px]">Status:</span>
+        <div className="flex items-center gap-1.5 bg-[#09130e]/95 border border-teal-500/35 hover:border-teal-400/70 rounded-xl px-3 py-1.5 shadow-[0_0_10px_rgba(20,184,166,0.1)] transition-all">
+          <span className="text-teal-500/80 text-[11px] font-semibold">Status:</span>
           <select
             value={filters.selectedStatus}
             onChange={(e) => onFilterChange({ selectedStatus: e.target.value })}
-            className="bg-transparent text-slate-200 font-mono focus:outline-none cursor-pointer"
+            className="bg-transparent text-slate-100 font-mono focus:outline-none cursor-pointer"
           >
-            <option value="all" className="bg-[#101713] text-slate-300">All Statuses</option>
-            <option value="confirmed" className="bg-[#101713] text-red-400">Confirmed</option>
-            <option value="verifying" className="bg-[#101713] text-amber-400">In Review</option>
-            <option value="flagged" className="bg-[#101713] text-orange-400">Flagged</option>
-            <option value="resolved" className="bg-[#101713] text-emerald-400">Resolved</option>
+            <option value="all" className="bg-[#0d1a14] text-slate-200">All Statuses</option>
+            <option value="confirmed" className="bg-[#0d1a14] text-red-400">Confirmed</option>
+            <option value="verifying" className="bg-[#0d1a14] text-amber-400">In Review</option>
+            <option value="flagged" className="bg-[#0d1a14] text-orange-400">Flagged</option>
+            <option value="resolved" className="bg-[#0d1a14] text-teal-300">Resolved</option>
           </select>
         </div>
 
@@ -101,10 +101,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         {isFiltered && (
           <button
             onClick={onResetFilters}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#16221b] border border-[#23352a] text-slate-300 hover:text-white hover:bg-[#1a2920] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0e1f18]/90 border border-teal-500/40 text-teal-300 hover:text-white hover:bg-teal-950/60 hover:border-teal-400 transition-all shadow-[0_0_12px_rgba(20,184,166,0.15)]"
             title="Reset active filters"
           >
-            <RotateCcw size={12} />
+            <RotateCcw size={12} className="text-teal-400" />
             <span>Clear Filters ({totalFilteredCount})</span>
           </button>
         )}
@@ -112,33 +112,33 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
       {/* Right side: Developer / Reviewer State Simulators */}
       <div className="flex items-center gap-2">
-        <span className="text-slate-500 text-[10px] uppercase font-semibold hidden lg:inline">
-          Test UI States:
+        <span className="text-teal-500/70 text-[10px] uppercase font-semibold tracking-wider hidden lg:inline">
+          TEST UI STATES:
         </span>
 
         <button
           onClick={onToggleLoading}
-          className={`px-2 py-0.5 rounded text-[11px] border transition-colors flex items-center gap-1 ${
+          className={`px-3 py-1 rounded-xl text-[11px] border transition-all flex items-center gap-1.5 shadow-sm ${
             isLoading
-              ? 'bg-amber-950 text-amber-300 border-amber-700/50'
-              : 'bg-[#101713] text-slate-400 border-[#1d2a21] hover:text-slate-200'
+              ? 'bg-amber-950/80 text-amber-300 border-amber-500/60 shadow-[0_0_12px_rgba(245,158,11,0.3)]'
+              : 'bg-[#0a1510] text-slate-400 border-teal-500/30 hover:border-teal-400 hover:text-teal-200'
           }`}
           title="Toggle simulated loading state"
         >
-          <RefreshCw size={11} className={isLoading ? 'animate-spin' : ''} />
+          <RefreshCw size={11} className={isLoading ? 'animate-spin text-amber-400' : 'text-teal-400'} />
           <span>{isLoading ? 'Loading ON' : 'Test Loading'}</span>
         </button>
 
         <button
           onClick={onToggleError}
-          className={`px-2 py-0.5 rounded text-[11px] border transition-colors flex items-center gap-1 ${
+          className={`px-3 py-1 rounded-xl text-[11px] border transition-all flex items-center gap-1.5 shadow-sm ${
             hasError
-              ? 'bg-red-950 text-red-300 border-red-700/50'
-              : 'bg-[#101713] text-slate-400 border-[#1d2a21] hover:text-slate-200'
+              ? 'bg-red-950/80 text-red-300 border-red-500/60 shadow-[0_0_12px_rgba(239,68,68,0.3)]'
+              : 'bg-[#0a1510] text-slate-400 border-teal-500/30 hover:border-teal-400 hover:text-teal-200'
           }`}
           title="Toggle simulated telemetry error state"
         >
-          <AlertTriangle size={11} />
+          <AlertTriangle size={11} className={hasError ? 'text-red-400' : 'text-amber-400'} />
           <span>{hasError ? 'Error ON' : 'Test Error'}</span>
         </button>
       </div>

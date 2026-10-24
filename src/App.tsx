@@ -99,7 +99,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#090d0b] text-slate-100 flex flex-col antialiased">
+    <div className="min-h-screen bg-transparent text-slate-100 flex flex-col antialiased selection:bg-teal-500/30 selection:text-teal-200">
       {/* Mobile Sidebar Backdrop */}
       {mobileSidebarOpen && (
         <div
@@ -227,20 +227,20 @@ export function App() {
         </main>
 
         {/* Global Operational Status Footer */}
-        <footer className="border-t border-[#16221b] bg-[#080c0a] py-3 px-6 text-xs font-mono text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <footer className="border-t border-teal-500/15 bg-[#060c09]/90 backdrop-blur-xl py-3 px-6 text-xs font-mono text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="flex items-center gap-2 text-teal-300">
+              <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse shadow-[0_0_8px_rgba(45,212,191,0.8)]" />
               ESA Sentinel-2 & USGS Landsat-9 Constellation Sync: Nominal
             </span>
-            <span>•</span>
+            <span className="text-teal-500/30">•</span>
             <span className="text-slate-400">CL-01 Earth Observation Platform</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-slate-400">
               WGS-84 / EPSG:4326
             </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#101713] text-emerald-400 border border-[#1e2a22]">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-950/80 text-teal-300 border border-teal-500/40 shadow-[0_0_8px_rgba(20,184,166,0.2)]">
               PROTOTYPE DEMO DATA
             </span>
           </div>

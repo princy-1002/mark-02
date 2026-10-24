@@ -1,19 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --bg-primary: #0a0d0c;
-  --bg-secondary: #0f1412;
-  --bg-card: #141b18;
-  --bg-card-hover: #19231f;
-  --border-subtle: #1c2722;
-  --border-active: #2a3d34;
+  --bg-primary: #040806;
+  --bg-secondary: #080f0c;
+  --bg-card: rgba(12, 22, 18, 0.85);
+  --bg-card-hover: rgba(18, 32, 26, 0.9);
+  --border-subtle: rgba(30, 50, 42, 0.6);
+  --border-active: rgba(45, 212, 191, 0.5);
+  --glow-teal: rgba(20, 184, 166, 0.35);
+  --glow-emerald: rgba(16, 185, 129, 0.3);
   --forest-green: #10b981;
   --emerald-accent: #059669;
   --lime-muted: #84cc16;
   --loss-critical: #ef4444;
   --loss-high: #f97316;
   --loss-moderate: #eab308;
-  --text-primary: #f1f5f9;
+  --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
 }
@@ -26,6 +28,10 @@ html, body {
   margin: 0;
   padding: 0;
   background-color: var(--bg-primary);
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(16, 185, 129, 0.12), transparent),
+    radial-gradient(ellipse 60% 40% at 50% 120%, rgba(20, 184, 166, 0.15), transparent),
+    linear-gradient(180deg, #030705 0%, #060b08 50%, #030605 100%);
   color: var(--text-primary);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   min-height: 100vh;
@@ -45,14 +51,15 @@ html, body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0d1210;
+  background: #080d0a;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e2c26;
+  background: #1a2c24;
   border-radius: 3px;
+  border: 1px solid rgba(45, 212, 191, 0.2);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2a3d35;
+  background: #254034;
 }
 
 /* Monospace font class for telemetry and coordinates */
@@ -60,22 +67,75 @@ html, body {
   font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-/* Clean glass/card utility */
+/* Spatial Futuristic HUD Card */
 .card-panel {
-  background-color: #121915;
-  border: 1px solid #1c2722;
-  border-radius: 0.75rem;
+  background: linear-gradient(145deg, rgba(14, 24, 20, 0.88) 0%, rgba(9, 16, 13, 0.95) 100%);
+  border: 1px solid rgba(45, 212, 191, 0.3);
+  border-radius: 1rem;
+  box-shadow: 
+    0 10px 30px -5px rgba(0, 0, 0, 0.7),
+    0 0 18px -3px rgba(20, 184, 166, 0.16),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.card-panel:hover {
+  border-color: rgba(45, 212, 191, 0.45);
+  box-shadow: 
+    0 12px 35px -5px rgba(0, 0, 0, 0.8),
+    0 0 24px -2px rgba(20, 184, 166, 0.24),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .card-panel-elevated {
-  background-color: #16201b;
-  border: 1px solid #23342c;
-  border-radius: 0.75rem;
+  background: linear-gradient(145deg, rgba(17, 30, 24, 0.9) 0%, rgba(11, 20, 16, 0.98) 100%);
+  border: 1px solid rgba(45, 212, 191, 0.4);
+  border-radius: 1rem;
+  box-shadow: 
+    0 14px 40px -6px rgba(0, 0, 0, 0.8),
+    0 0 24px -2px rgba(20, 184, 166, 0.22),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Spatial UI Glowing Pill */
+.spatial-pill {
+  background: rgba(12, 21, 17, 0.8);
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  border-radius: 9999px;
+  box-shadow: 0 0 12px -2px rgba(20, 184, 166, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+.spatial-pill:hover {
+  border-color: rgba(45, 212, 191, 0.6);
+  box-shadow: 0 0 16px 0 rgba(20, 184, 166, 0.25), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+}
+
+.spatial-glow-teal {
+  box-shadow: 0 0 20px 2px rgba(20, 184, 166, 0.35);
+}
+
+.spatial-glow-emerald {
+  box-shadow: 0 0 20px 2px rgba(16, 185, 129, 0.35);
+}
+
+.spatial-glow-red {
+  box-shadow: 0 0 20px 2px rgba(239, 68, 68, 0.35);
+}
+
+.spatial-glow-amber {
+  box-shadow: 0 0 20px 2px rgba(245, 158, 11, 0.35);
 }
 
 .map-grid-pattern {
-  background-size: 32px 32px;
+  background-size: 28px 28px;
   background-image: 
-    linear-gradient(to right, rgba(16, 185, 129, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(16, 185, 129, 0.05) 1px, transparent 1px);
+    linear-gradient(to right, rgba(45, 212, 191, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(45, 212, 191, 0.07) 1px, transparent 1px);
 }
+
+/* Hologram Wireframe Terrain Canvas */
+.terrain-wireframe-glow {
+  filter: drop-shadow(0 0 8px rgba(45, 212, 191, 0.5));
+}
+

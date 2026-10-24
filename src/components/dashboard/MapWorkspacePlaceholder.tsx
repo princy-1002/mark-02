@@ -46,45 +46,45 @@ export const MapWorkspacePlaceholder: React.FC<MapWorkspacePlaceholderProps> = (
   };
 
   return (
-    <div className={`card-panel overflow-hidden flex flex-col relative transition-all duration-300 ${
-      isFullscreen ? 'fixed inset-4 z-50 shadow-2xl bg-[#090d0b]' : 'h-[460px] w-full'
+    <div className={`card-panel rounded-2xl overflow-hidden flex flex-col relative transition-all duration-300 border border-teal-500/35 shadow-[0_12px_40px_rgba(0,0,0,0.6),0_0_20px_rgba(20,184,166,0.15)] ${
+      isFullscreen ? 'fixed inset-4 z-50 shadow-2xl bg-[#060d09]' : 'h-[460px] w-full'
     }`}>
       {/* Top Map HUD Bar */}
-      <div className="h-12 bg-[#0d1410]/95 backdrop-blur-md border-b border-[#1c2921] px-4 flex items-center justify-between z-20">
+      <div className="h-14 bg-gradient-to-r from-[#0d1a14]/95 via-[#0e1f18]/95 to-[#0b1712]/95 backdrop-blur-xl border-b border-teal-500/25 px-5 flex items-center justify-between z-20">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-400">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span className="font-semibold">GEOSPATIAL VIEWPORT</span>
+          <div className="flex items-center gap-2 text-xs font-mono text-teal-300">
+            <span className="w-2.5 h-2.5 rounded-full bg-teal-400 animate-pulse shadow-[0_0_10px_rgba(45,212,191,0.9)]" />
+            <span className="font-bold tracking-wider uppercase">GEOSPATIAL VIEWPORT</span>
           </div>
-          <span className="text-slate-600">|</span>
-          <span className="text-xs font-mono text-slate-300 truncate hidden sm:inline">
+          <span className="text-teal-500/40">|</span>
+          <span className="text-xs font-mono text-slate-200 truncate hidden sm:inline font-semibold">
             ZONE: {region.name}
           </span>
-          <span className="text-xs font-mono text-slate-500 hidden md:inline">
+          <span className="text-xs font-mono text-teal-500/80 hidden md:inline">
             [{region.coordinates.lat.toFixed(4)}°, {region.coordinates.lng.toFixed(4)}°]
           </span>
         </div>
 
         {/* Integration Bridge Callout */}
-        <div className="flex items-center gap-2">
-          <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-950/70 border border-emerald-700/50 text-[11px] font-mono text-emerald-300">
-            <Sparkles size={12} className="text-emerald-400" />
+        <div className="flex items-center gap-2.5">
+          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-950/80 border border-teal-500/50 text-[11px] font-mono text-teal-300 shadow-[0_0_10px_rgba(20,184,166,0.25)]">
+            <Sparkles size={12} className="text-teal-400" />
             <span>CesiumJS 3D Globe Bridge Ready</span>
           </div>
 
           {onNavigateTo3DEarth && (
             <button
               onClick={onNavigateTo3DEarth}
-              className="text-xs font-medium text-emerald-400 hover:text-emerald-300 px-2.5 py-1 rounded bg-[#15221b] border border-[#23362a] hover:bg-[#1a2b22] transition-colors flex items-center gap-1"
+              className="text-xs font-semibold text-teal-300 hover:text-white px-3 py-1 rounded-xl bg-[#0e1e17]/90 border border-teal-500/40 hover:border-teal-400/90 hover:bg-[#142820] transition-all flex items-center gap-1.5 shadow-[0_0_12px_rgba(20,184,166,0.18)]"
             >
-              <Globe size={13} />
+              <Globe size={13} className="text-teal-400" />
               <span>Full 3D Earth</span>
             </button>
           )}
 
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-[#18241d] transition-colors"
+            className="p-1.5 rounded-xl text-slate-400 hover:text-teal-300 hover:bg-teal-950/40 border border-transparent hover:border-teal-500/30 transition-all"
             title={isFullscreen ? "Exit Fullscreen" : "Expand Map"}
           >
             {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
@@ -95,52 +95,84 @@ export const MapWorkspacePlaceholder: React.FC<MapWorkspacePlaceholderProps> = (
       {/* Main Map Canvas Placeholder / Cesium Integration Anchor */}
       <div 
         id="cesium-viewport-container" 
-        className="relative flex-1 bg-[#070b09] overflow-hidden map-grid-pattern select-none"
+        className="relative flex-1 bg-gradient-to-b from-[#050b08] via-[#060e0a] to-[#040806] overflow-hidden map-grid-pattern select-none"
       >
-        {/* Simulated Satellite Forest Canopy Surface */}
-        <div className="absolute inset-0 opacity-40 mix-blend-screen pointer-events-none">
-          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+        {/* Futuristic 3D Perspective Digital Elevation Wireframe Terrain Mesh */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-end">
+          <svg className="w-full h-full" viewBox="0 0 1000 400" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <radialGradient id="forestCanopyGlow" cx="50%" cy="50%" r="65%">
-                <stop offset="0%" stopColor="#064e3b" stopOpacity="0.8" />
-                <stop offset="40%" stopColor="#042f24" stopOpacity="0.4" />
-                <stop offset="100%" stopColor="#021611" stopOpacity="0" />
-              </radialGradient>
-              <pattern id="contourGrid" width="60" height="60" patternUnits="userSpaceOnUse">
-                <circle cx="30" cy="30" r="1.5" fill="#10b981" fillOpacity="0.15" />
-                <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#10b981" strokeWidth="0.5" strokeOpacity="0.08" />
-              </pattern>
+              <linearGradient id="terrainGlowGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+                <stop offset="0%" stopColor="#042a1e" stopOpacity="0.8" />
+                <stop offset="60%" stopColor="#0d553e" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#14b8a6" stopOpacity="0.05" />
+              </linearGradient>
+              <linearGradient id="wireframeLineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#059669" stopOpacity="0.3" />
+                <stop offset="30%" stopColor="#14b8a6" stopOpacity="0.85" />
+                <stop offset="70%" stopColor="#2dd4bf" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="#059669" stopOpacity="0.3" />
+              </linearGradient>
             </defs>
-            <rect width="100%" height="100%" fill="url(#forestCanopyGlow)" />
-            <rect width="100%" height="100%" fill="url(#contourGrid)" />
-            
-            {/* Simulated River and Drainage Vectors */}
-            <path
-              d="M 50,120 Q 240,180 420,140 T 780,260 T 1100,220"
-              fill="none"
-              stroke="#0e7490"
-              strokeWidth="2"
-              strokeOpacity="0.35"
-              strokeDasharray="6 3"
-            />
-            <path
-              d="M 220,50 Q 320,240 450,290 T 680,410"
-              fill="none"
-              stroke="#0891b2"
-              strokeWidth="1.5"
-              strokeOpacity="0.25"
-            />
 
-            {/* Monitored Sector Polygon Contour */}
-            <polygon
-              points="140,80 520,70 680,210 590,390 210,340 110,210"
-              fill="#10b981"
-              fillOpacity="0.04"
-              stroke="#10b981"
-              strokeWidth="1.2"
-              strokeDasharray="4 4"
+            {/* Background Perspective Grid Floor */}
+            <g stroke="#14b8a6" strokeOpacity="0.12" strokeWidth="0.8">
+              {Array.from({ length: 25 }).map((_, i) => (
+                <line key={`vert-${i}`} x1={i * 42} y1="140" x2={500 + (i - 12) * 55} y2="400" />
+              ))}
+              {Array.from({ length: 8 }).map((_, i) => (
+                <line key={`horiz-${i}`} x1="0" y1={180 + i * 28} x2="1000" y2={180 + i * 28} />
+              ))}
+            </g>
+
+            {/* Back Mountain Ridge Wireframe */}
+            <path
+              d="M 0,260 Q 140,210 260,240 T 480,180 T 700,220 T 900,190 L 1000,210 L 1000,400 L 0,400 Z"
+              fill="url(#terrainGlowGrad)"
+              stroke="#0d9488"
+              strokeWidth="1"
               strokeOpacity="0.4"
             />
+
+            {/* Middle Elevation Terrain Wireframe with Peaks */}
+            <path
+              d="M 0,290 C 120,240 200,160 310,210 C 400,250 490,140 600,190 C 710,240 820,170 1000,250 L 1000,400 L 0,400 Z"
+              fill="rgba(6, 78, 59, 0.25)"
+              stroke="url(#wireframeLineGrad)"
+              strokeWidth="1.5"
+              strokeOpacity="0.75"
+            />
+
+            {/* Prominent Foreground 3D Wireframe Ridge (Matching reference screenshot) */}
+            <path
+              d="M 0,330 C 100,290 180,240 280,260 C 360,280 430,220 520,240 C 620,260 740,200 860,250 C 940,280 980,260 1000,270"
+              fill="none"
+              stroke="#2dd4bf"
+              strokeWidth="2"
+              className="terrain-wireframe-glow"
+            />
+
+            {/* Detailed Wireframe Cross-Grid Contours */}
+            {Array.from({ length: 18 }).map((_, i) => {
+              const xPos = 40 + i * 52;
+              const yPeak = 220 + Math.sin(i * 0.5) * 45;
+              return (
+                <path
+                  key={`wire-mesh-${i}`}
+                  d={`M ${xPos},400 L ${xPos + 10},${yPeak} L ${xPos + 35},${yPeak + 20} L ${xPos + 45},400`}
+                  fill="none"
+                  stroke="#10b981"
+                  strokeWidth="0.8"
+                  strokeOpacity="0.35"
+                />
+              );
+            })}
+
+            {/* Glowing Peak Vertices (Telemetry nodes) */}
+            <circle cx="310" cy="210" r="3" fill="#2dd4bf" className="terrain-wireframe-glow" />
+            <circle cx="600" cy="190" r="3.5" fill="#34d399" className="terrain-wireframe-glow" />
+            <circle cx="520" cy="240" r="2.5" fill="#2dd4bf" />
+            <circle cx="740" cy="200" r="3" fill="#38bdf8" />
+            <circle cx="860" cy="250" r="2.5" fill="#2dd4bf" />
           </svg>
         </div>
 
@@ -271,76 +303,75 @@ export const MapWorkspacePlaceholder: React.FC<MapWorkspacePlaceholderProps> = (
 
         {/* Floating Map Controls (Right Side) */}
         <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
-          {/* Zoom Controls */}
-          <div className="bg-[#0b120e]/90 backdrop-blur-md border border-[#1e2c24] rounded-lg p-1 flex flex-col shadow-lg">
+          {/* Zoom and Reset Controls in single spatial vertical pill */}
+          <div className="bg-[#09140f]/95 backdrop-blur-xl border border-teal-500/35 rounded-2xl p-1 flex flex-col items-center shadow-[0_0_16px_rgba(20,184,166,0.18)]">
             <button
               onClick={() => setZoomLevel(prev => Math.min(prev + 1, 16))}
-              className="p-1.5 text-slate-300 hover:text-white hover:bg-[#15201a] rounded transition-colors"
+              className="p-2 text-slate-300 hover:text-white hover:bg-teal-950/60 rounded-xl transition-all"
               title="Zoom In"
             >
-              <Plus size={16} />
+              <Plus size={16} className="text-teal-400" />
             </button>
-            <div className="h-px bg-[#1c2921] my-0.5" />
+            <div className="w-4 h-px bg-teal-500/20 my-1" />
             <button
               onClick={() => setZoomLevel(prev => Math.max(prev - 1, 6))}
-              className="p-1.5 text-slate-300 hover:text-white hover:bg-[#15201a] rounded transition-colors"
+              className="p-2 text-slate-300 hover:text-white hover:bg-teal-950/60 rounded-xl transition-all"
               title="Zoom Out"
             >
-              <Minus size={16} />
+              <Minus size={16} className="text-teal-400" />
+            </button>
+            <div className="w-4 h-px bg-teal-500/20 my-1" />
+            <button
+              onClick={() => {
+                setZoomLevel(11);
+                setSelectedHotspot(null);
+              }}
+              className="p-2 text-slate-300 hover:text-white hover:bg-teal-950/60 rounded-xl transition-all"
+              title="Reset Map Extents"
+            >
+              <RotateCcw size={15} className="text-teal-400" />
             </button>
           </div>
-
-          {/* Reset View Button */}
-          <button
-            onClick={() => {
-              setZoomLevel(11);
-              setSelectedHotspot(null);
-            }}
-            className="p-2 bg-[#0b120e]/90 backdrop-blur-md border border-[#1e2c24] rounded-lg text-slate-300 hover:text-white hover:bg-[#15201a] shadow-lg transition-colors"
-            title="Reset Map Extents"
-          >
-            <RotateCcw size={15} />
-          </button>
         </div>
 
         {/* Layer Selector Bar (Bottom Right) */}
-        <div className="absolute bottom-4 right-4 z-20 bg-[#0a0f0d]/90 backdrop-blur-md border border-[#1e2c24] rounded-lg p-1 flex items-center gap-1 shadow-lg text-xs font-mono">
+        <div className="absolute bottom-4 right-4 z-20 bg-[#09140f]/95 backdrop-blur-xl border border-teal-500/35 rounded-2xl p-1 flex items-center gap-1 shadow-[0_0_16px_rgba(20,184,166,0.18)] text-xs font-mono">
           <button
             onClick={() => setActiveLayer('ndvi')}
-            className={`px-2 py-1 rounded transition-colors ${
+            className={`px-3 py-1.5 rounded-xl transition-all ${
               activeLayer === 'ndvi'
-                ? 'bg-emerald-950 border border-emerald-700/60 text-emerald-300'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-[#141e18]'
+                ? 'bg-teal-500/25 border border-teal-400/80 text-teal-200 font-semibold shadow-[0_0_10px_rgba(20,184,166,0.3)]'
+                : 'text-slate-400 hover:text-teal-200 hover:bg-teal-950/40'
             }`}
           >
             NDVI Anomaly
           </button>
           <button
             onClick={() => setActiveLayer('true-color')}
-            className={`px-2 py-1 rounded transition-colors ${
+            className={`px-3 py-1.5 rounded-xl transition-all ${
               activeLayer === 'true-color'
-                ? 'bg-emerald-950 border border-emerald-700/60 text-emerald-300'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-[#141e18]'
+                ? 'bg-teal-500/25 border border-teal-400/80 text-teal-200 font-semibold shadow-[0_0_10px_rgba(20,184,166,0.3)]'
+                : 'text-slate-400 hover:text-teal-200 hover:bg-teal-950/40'
             }`}
           >
             True Color
           </button>
           <button
             onClick={() => setActiveLayer('infrared')}
-            className={`px-2 py-1 rounded transition-colors ${
+            className={`px-3 py-1.5 rounded-xl transition-all ${
               activeLayer === 'infrared'
-                ? 'bg-emerald-950 border border-emerald-700/60 text-emerald-300'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-[#141e18]'
+                ? 'bg-teal-500/25 border border-teal-400/80 text-teal-200 font-semibold shadow-[0_0_10px_rgba(20,184,166,0.3)]'
+                : 'text-slate-400 hover:text-teal-200 hover:bg-teal-950/40'
             }`}
           >
             NIR SWIR
           </button>
           <button
             onClick={() => setActiveLayer('burn')}
-            className={`px-2 py-1 rounded transition-colors ${
+            className={`px-3 py-1.5 rounded-xl transition-all ${
               activeLayer === 'burn'
-                ? 'bg-emerald-950 border border-emerald-700/60 text-emerald-300'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-[#141e18]'
+                ? 'bg-teal-500/25 border border-teal-400/80 text-teal-200 font-semibold shadow-[0_0_10px_rgba(20,184,166,0.3)]'
+                : 'text-slate-400 hover:text-teal-200 hover:bg-teal-950/40'
             }`}
           >
             NBR Index

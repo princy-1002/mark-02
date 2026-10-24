@@ -82,12 +82,12 @@ export const TopNav: React.FC<TopNavProps> = ({
   }, []);
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-[#0a0f0c]/90 backdrop-blur-md border-b border-[#1b2721] px-4 sm:px-6 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-30 h-18 bg-[#09100d]/90 backdrop-blur-xl border-b border-teal-500/20 px-4 sm:px-6 flex items-center justify-between gap-4 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
       {/* Left section: mobile hamburger & Region Selector */}
       <div className="flex items-center gap-3">
         <button
           onClick={onToggleMobileSidebar}
-          className="lg:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-[#16211b] transition-colors"
+          className="lg:hidden p-2 rounded-xl text-slate-300 hover:text-teal-300 hover:bg-teal-950/40 border border-transparent hover:border-teal-500/30 transition-colors"
           aria-label="Toggle Navigation Menu"
         >
           <Menu size={20} />
@@ -95,45 +95,45 @@ export const TopNav: React.FC<TopNavProps> = ({
 
         {/* Brand indicator for mobile */}
         <div className="lg:hidden flex items-center gap-2">
-          <div className="w-7 h-7 rounded bg-emerald-950 border border-emerald-600/50 flex items-center justify-center text-emerald-400">
+          <div className="w-8 h-8 rounded-xl bg-teal-950 border border-teal-500/50 flex items-center justify-center text-teal-300 shadow-[0_0_10px_rgba(20,184,166,0.3)]">
             <Radio size={16} />
           </div>
           <span className="font-bold text-slate-100 text-sm font-mono">CL-01</span>
         </div>
 
-        {/* Region Selector Dropdown */}
+        {/* Region Selector Dropdown (Active Zone Pill) */}
         <div className="relative" ref={regionDropdownRef}>
           <button
             onClick={() => setShowRegionDropdown(!showRegionDropdown)}
-            className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-[#111915] border border-[#213228] hover:border-emerald-600/50 hover:bg-[#15201b] transition-all text-left"
+            className="flex items-center gap-3 px-3.5 py-1.5 rounded-2xl bg-[#0c1813]/90 border border-teal-500/40 hover:border-teal-400/80 hover:bg-[#10221a] transition-all text-left shadow-[0_0_14px_rgba(20,184,166,0.18),inset_0_1px_1px_rgba(255,255,255,0.06)] group"
           >
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="w-2.5 h-2.5 rounded-full bg-teal-400 animate-pulse shadow-[0_0_8px_rgba(45,212,191,0.8)]" />
             <div className="hidden sm:block">
-              <div className="text-[10px] uppercase font-mono tracking-wider text-slate-400">
-                Active Zone
+              <div className="text-[9px] uppercase font-mono tracking-widest text-teal-400/80 font-bold">
+                ACTIVE ZONE
               </div>
-              <div className="text-xs font-semibold text-slate-200 truncate max-w-[170px]">
+              <div className="text-xs font-semibold text-slate-100 truncate max-w-[190px]">
                 {selectedRegion?.name}
               </div>
             </div>
             <div className="sm:hidden text-xs font-medium text-slate-200 truncate max-w-[110px]">
               {selectedRegion?.name}
             </div>
-            <ChevronDown size={14} className="text-slate-400 ml-1" />
+            <ChevronDown size={14} className="text-teal-400/70 ml-1 group-hover:text-teal-300 transition-colors" />
           </button>
 
           {/* Dropdown Menu */}
           {showRegionDropdown && (
-            <div className="absolute left-0 top-full mt-2 w-72 sm:w-80 bg-[#101713] border border-[#22332a] rounded-xl shadow-2xl shadow-black/80 z-50 overflow-hidden animate-in fade-in duration-150">
-              <div className="p-3 border-b border-[#1b2a22] bg-[#0c120f] flex items-center justify-between">
-                <span className="text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold">
+            <div className="absolute left-0 top-full mt-2 w-72 sm:w-80 bg-[#0d1a14]/98 backdrop-blur-2xl border border-teal-500/40 rounded-2xl shadow-2xl shadow-black/90 z-50 overflow-hidden animate-in fade-in duration-150">
+              <div className="p-3 border-b border-teal-500/20 bg-[#09120e] flex items-center justify-between">
+                <span className="text-xs font-mono uppercase tracking-wider text-teal-300/80 font-semibold">
                   Select Monitored Basin
                 </span>
-                <span className="text-[10px] font-mono text-emerald-400">
+                <span className="text-[10px] font-mono text-teal-300 px-2 py-0.5 rounded-full bg-teal-950/80 border border-teal-500/40">
                   {regions.length} Zones
                 </span>
               </div>
-              <div className="max-h-64 overflow-y-auto divide-y divide-[#17231c]">
+              <div className="max-h-64 overflow-y-auto divide-y divide-teal-500/10">
                 {regions.map((reg) => {
                   const isSelected = reg.id === selectedRegionId;
                   return (
@@ -143,24 +143,24 @@ export const TopNav: React.FC<TopNavProps> = ({
                         onSelectRegion(reg.id);
                         setShowRegionDropdown(false);
                       }}
-                      className={`w-full p-3 text-left hover:bg-[#15201a] transition-colors flex items-start gap-2.5 ${
-                        isSelected ? 'bg-emerald-950/40 text-emerald-300' : 'text-slate-300'
+                      className={`w-full p-3 text-left hover:bg-teal-950/40 transition-colors flex items-start gap-2.5 ${
+                        isSelected ? 'bg-teal-950/70 text-teal-200' : 'text-slate-300'
                       }`}
                     >
-                      <MapPin size={16} className={`mt-0.5 shrink-0 ${isSelected ? 'text-emerald-400' : 'text-slate-500'}`} />
+                      <MapPin size={16} className={`mt-0.5 shrink-0 ${isSelected ? 'text-teal-400' : 'text-slate-500'}`} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <p className="text-xs font-medium text-slate-200 truncate">{reg.name}</p>
-                          <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
-                            reg.riskRating === 'Severe' ? 'bg-red-950/50 text-red-400 border border-red-800/40' :
-                            reg.riskRating === 'High' ? 'bg-orange-950/40 text-orange-400 border border-orange-800/40' :
-                            'bg-emerald-950/40 text-emerald-400 border border-emerald-800/40'
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono ${
+                            reg.riskRating === 'Severe' ? 'bg-red-950/60 text-red-400 border border-red-800/50' :
+                            reg.riskRating === 'High' ? 'bg-orange-950/50 text-orange-400 border border-orange-800/50' :
+                            'bg-teal-950/60 text-teal-300 border border-teal-500/40'
                           }`}>
                             {reg.riskRating}
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-400 truncate">{reg.country}</p>
-                        <div className="flex items-center gap-2 mt-1 text-[10px] font-mono text-slate-500">
+                        <div className="flex items-center gap-2 mt-1 text-[10px] font-mono text-teal-500/70">
                           <span>{reg.canopyDensityPct}% Canopy</span>
                           <span>•</span>
                           <span>{reg.lastSatellitePass}</span>
@@ -181,10 +181,10 @@ export const TopNav: React.FC<TopNavProps> = ({
       </div>
 
       {/* Center / Search Section */}
-      <div className="flex-1 max-w-md mx-2 relative" ref={searchContainerRef}>
+      <div className="flex-1 max-w-lg mx-2 relative" ref={searchContainerRef}>
         <div className="relative">
-          <Search size={15} className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${
-            isSearchFocused ? 'text-emerald-400' : 'text-slate-500'
+          <Search size={15} className={`absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors ${
+            isSearchFocused ? 'text-teal-300' : 'text-teal-600/70'
           }`} />
           <input
             type="text"
@@ -199,7 +199,7 @@ export const TopNav: React.FC<TopNavProps> = ({
             }}
             onBlur={() => setIsSearchFocused(false)}
             placeholder="Search regions, biomes, sensors, drivers..."
-            className="w-full bg-[#111915] border border-[#213228] focus:border-emerald-500/70 focus:bg-[#141e19] focus:outline-none rounded-lg pl-9 pr-10 py-1.5 text-xs text-slate-200 placeholder-slate-500 transition-all font-mono"
+            className="w-full bg-[#0b1712]/85 border border-teal-500/30 focus:border-teal-400/80 focus:bg-[#0f1f18] focus:outline-none rounded-2xl pl-10 pr-10 py-2 text-xs text-slate-100 placeholder-teal-600/70 transition-all font-mono shadow-[0_0_14px_rgba(20,184,166,0.1),inset_0_1px_1px_rgba(255,255,255,0.05)]"
           />
           {searchQuery && (
             <button
@@ -207,7 +207,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                 onSearchChange('');
                 setShowSearchDropdown(false);
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 hover:text-slate-300"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-teal-500/70 hover:text-teal-200"
             >
               ×
             </button>
@@ -216,20 +216,20 @@ export const TopNav: React.FC<TopNavProps> = ({
 
         {/* Region Search Results Dropdown */}
         {showSearchDropdown && searchQuery.trim().length > 0 && (
-          <div className="absolute left-0 right-0 top-full mt-1.5 bg-[#101713] border border-[#22332a] rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in duration-150">
-            <div className="p-2.5 border-b border-[#1b2a22] bg-[#0c120f] flex items-center justify-between text-[11px] font-mono">
-              <span className="text-slate-400 font-semibold uppercase tracking-wider">
+          <div className="absolute left-0 right-0 top-full mt-2 bg-[#0d1a14]/98 backdrop-blur-2xl border border-teal-500/40 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in duration-150">
+            <div className="p-2.5 border-b border-teal-500/20 bg-[#09120e] flex items-center justify-between text-[11px] font-mono">
+              <span className="text-teal-300/80 font-semibold uppercase tracking-wider">
                 Matching Monitored Regions
               </span>
-              <span className="text-emerald-400">{matchingRegions.length} Found</span>
+              <span className="text-teal-300 font-bold">{matchingRegions.length} Found</span>
             </div>
 
             {matchingRegions.length === 0 ? (
-              <div className="p-4 text-center text-xs font-mono text-slate-500">
-                No monitored regions found matching &ldquo;<span className="text-slate-300">{searchQuery}</span>&rdquo;.
+              <div className="p-4 text-center text-xs font-mono text-slate-400">
+                No monitored regions found matching &ldquo;<span className="text-teal-300">{searchQuery}</span>&rdquo;.
               </div>
             ) : (
-              <div className="max-h-60 overflow-y-auto divide-y divide-[#17231c]">
+              <div className="max-h-60 overflow-y-auto divide-y divide-teal-500/10">
                 {matchingRegions.map(reg => (
                   <button
                     key={reg.id}
@@ -237,13 +237,13 @@ export const TopNav: React.FC<TopNavProps> = ({
                       onSelectRegion(reg.id);
                       setShowSearchDropdown(false);
                     }}
-                    className="w-full p-2.5 text-left hover:bg-[#15201a] transition-colors flex items-start gap-2.5 text-xs font-mono"
+                    className="w-full p-2.5 text-left hover:bg-teal-950/40 transition-colors flex items-start gap-2.5 text-xs font-mono"
                   >
-                    <MapPin size={14} className="text-emerald-400 mt-0.5 shrink-0" />
+                    <MapPin size={14} className="text-teal-400 mt-0.5 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-slate-100 truncate">{reg.name}</span>
-                        <span className="text-[10px] text-slate-500">{reg.coordinates.lat.toFixed(2)}°, {reg.coordinates.lng.toFixed(2)}°</span>
+                        <span className="text-[10px] text-teal-500/70">{reg.coordinates.lat.toFixed(2)}°, {reg.coordinates.lng.toFixed(2)}°</span>
                       </div>
                       <p className="text-[11px] text-slate-400 truncate">{reg.country} · {reg.biome}</p>
                     </div>
@@ -256,17 +256,17 @@ export const TopNav: React.FC<TopNavProps> = ({
       </div>
 
       {/* Right Controls: Notifications & Profile */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-2.5 sm:gap-3">
         {/* Notifications */}
         <div className="relative" ref={notificationRef}>
           <button
             onClick={() => setShowNotificationDrawer(!showNotificationDrawer)}
-            className="relative p-2 rounded-lg bg-[#111915] border border-[#213228] text-slate-300 hover:text-white hover:border-emerald-600/40 hover:bg-[#15201b] transition-all"
+            className="relative p-2.5 rounded-2xl bg-[#0c1813]/90 border border-teal-500/35 text-teal-300 hover:text-white hover:border-teal-400/80 hover:bg-[#10221a] transition-all shadow-[0_0_12px_rgba(20,184,166,0.15)]"
             aria-label="Open notifications"
           >
             <Bell size={17} />
             {activities.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-600 text-white font-mono text-[10px] font-bold flex items-center justify-center border-2 border-[#0a0f0c]">
+              <span className="absolute -top-1 -right-1 w-4.5 h-4.5 rounded-full bg-red-600 text-white font-mono text-[10px] font-bold flex items-center justify-center border-2 border-[#09100d] shadow-[0_0_8px_rgba(239,68,68,0.8)]">
                 {activities.length}
               </span>
             )}
@@ -285,25 +285,25 @@ export const TopNav: React.FC<TopNavProps> = ({
         <div className="relative" ref={profileDropdownRef}>
           <button
             onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-            className="flex items-center gap-2.5 p-1 sm:pl-2.5 sm:pr-2 sm:py-1 rounded-lg bg-[#111915] border border-[#213228] hover:border-emerald-600/40 hover:bg-[#15201b] transition-all text-left"
+            className="flex items-center gap-3 p-1.5 sm:pl-3 sm:pr-3 sm:py-1.5 rounded-2xl bg-[#0c1813]/90 border border-teal-500/35 hover:border-teal-400/80 hover:bg-[#10221a] transition-all text-left shadow-[0_0_12px_rgba(20,184,166,0.15),inset_0_1px_1px_rgba(255,255,255,0.06)] group"
           >
-            <div className="w-7 h-7 rounded-md bg-emerald-950/80 border border-emerald-600/40 flex items-center justify-center text-emerald-400 font-mono text-xs font-bold">
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-800 to-emerald-950 border border-teal-400/60 flex items-center justify-center text-teal-200 font-mono text-xs font-bold shadow-[0_0_8px_rgba(20,184,166,0.4)]">
               EA
             </div>
             <div className="hidden sm:block leading-tight">
-              <p className="text-xs font-semibold text-slate-200">Analyst Dr. Thorne</p>
-              <p className="text-[10px] text-emerald-400 font-mono">Geospatial L3</p>
+              <p className="text-xs font-semibold text-slate-100 font-sans">Analyst Dr. Thorne</p>
+              <p className="text-[10px] text-teal-400 font-mono">Geospatial L3</p>
             </div>
-            <ChevronDown size={14} className="hidden sm:block text-slate-500" />
+            <ChevronDown size={14} className="hidden sm:block text-teal-500/70 group-hover:text-teal-300 transition-colors" />
           </button>
 
           {showProfileDropdown && (
-            <div className="absolute right-0 top-full mt-2 w-64 bg-[#101713] border border-[#22332a] rounded-xl shadow-2xl shadow-black/80 z-50 p-3 animate-in fade-in duration-150">
-              <div className="pb-3 border-b border-[#1b2922]">
-                <p className="text-xs font-semibold text-slate-200">Environmental Analyst Console</p>
+            <div className="absolute right-0 top-full mt-2 w-64 bg-[#0d1a14]/98 backdrop-blur-2xl border border-teal-500/40 rounded-2xl shadow-2xl shadow-black/90 z-50 p-3.5 animate-in fade-in duration-150">
+              <div className="pb-3 border-b border-teal-500/20">
+                <p className="text-xs font-semibold text-slate-100">Environmental Analyst Console</p>
                 <p className="text-[11px] text-slate-400">thorne@cl-earth-intelligence.org</p>
-                <div className="mt-2 flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 bg-emerald-950/50 p-1.5 rounded border border-emerald-800/40">
-                  <Shield size={12} />
+                <div className="mt-2.5 flex items-center gap-1.5 text-[10px] font-mono text-teal-300 bg-teal-950/60 p-2 rounded-xl border border-teal-500/40 shadow-[0_0_8px_rgba(20,184,166,0.2)]">
+                  <Shield size={12} className="text-teal-400" />
                   <span>Role: Lead Verification Officer</span>
                 </div>
               </div>

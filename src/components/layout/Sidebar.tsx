@@ -93,25 +93,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 bg-[#0c120f] border-r border-[#1a2620] flex flex-col ${
+      className={`fixed top-0 left-0 z-40 h-screen transition-all duration-300 bg-[#09100d]/95 backdrop-blur-xl border-r border-teal-500/20 flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.6)] ${
         collapsed ? 'w-18' : 'w-64'
       }`}
     >
       {/* Brand Header */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-[#1a2620] bg-[#090d0b]">
+      <div className="h-20 flex items-center justify-between px-4 border-b border-teal-500/15 bg-gradient-to-b from-[#0e1b15]/80 to-[#09100d]/60">
         {!collapsed && (
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-9 h-9 rounded-lg bg-emerald-950/80 border border-emerald-600/40 flex items-center justify-center text-emerald-400 shrink-0">
-              <Radio size={20} className="animate-pulse" />
-            </div>
             <div className="leading-tight truncate">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-slate-100 tracking-wider text-base font-mono">CL-01</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-900/40 text-emerald-300 border border-emerald-700/40 font-mono">
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-slate-100 tracking-wider text-lg font-mono">CL-01</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-teal-950/80 text-teal-300 border border-teal-500/50 shadow-[0_0_8px_rgba(20,184,166,0.3)]">
                   v2.4
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 tracking-tight truncate">
+              <p className="text-[11px] text-teal-400/80 tracking-tight truncate font-sans mt-0.5">
                 Environmental Intelligence
               </p>
             </div>
@@ -120,8 +117,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {collapsed && (
           <div className="w-full flex justify-center">
-            <div className="w-9 h-9 rounded-lg bg-emerald-950/80 border border-emerald-600/40 flex items-center justify-center text-emerald-400">
-              <Radio size={20} />
+            <div className="w-9 h-9 rounded-xl bg-teal-950/80 border border-teal-500/40 flex items-center justify-center text-teal-300 shadow-[0_0_12px_rgba(20,184,166,0.25)]">
+              <Radio size={18} />
             </div>
           </div>
         )}
@@ -130,7 +127,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {!collapsed && (
           <button
             onClick={onToggleCollapse}
-            className="p-1 rounded-md text-slate-400 hover:text-slate-200 hover:bg-[#16201b] transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-teal-300 hover:bg-teal-950/40 border border-transparent hover:border-teal-500/30 transition-all"
             title="Collapse Sidebar"
           >
             <ChevronLeft size={16} />
@@ -139,11 +136,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Navigation List */}
-      <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
-        <div className="px-3 pb-2">
+      <nav className="flex-1 py-4 px-3 space-y-1.5 overflow-y-auto">
+        <div className="px-2 pb-1">
           {!collapsed ? (
-            <p className="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-semibold">
-              Mission Console
+            <p className="text-[10px] font-mono uppercase tracking-widest text-teal-500/70 font-semibold">
+              ION CONSOLE
             </p>
           ) : (
             <div className="h-2" />
@@ -157,35 +154,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
               key={item.id}
               onClick={() => onPageChange(item.id)}
               title={collapsed ? item.label : undefined}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group relative ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all group relative ${
                 isActive
-                  ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/50 shadow-sm shadow-emerald-950'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-[#141d18]'
+                  ? 'bg-gradient-to-r from-teal-950/80 to-emerald-950/60 text-teal-200 border border-teal-400/80 shadow-[0_0_16px_rgba(20,184,166,0.3),inset_0_1px_1px_rgba(255,255,255,0.1)]'
+                  : 'text-slate-400 hover:text-slate-100 hover:bg-[#12221b]/50 hover:border hover:border-teal-500/25 border border-transparent'
               }`}
             >
-              <span className={`shrink-0 transition-colors ${isActive ? 'text-emerald-400' : 'group-hover:text-slate-200'}`}>
+              <span className={`shrink-0 transition-colors ${isActive ? 'text-teal-300' : 'group-hover:text-teal-300'}`}>
                 {item.icon}
               </span>
 
               {!collapsed && (
-                <span className="truncate flex-1 text-left">{item.label}</span>
+                <span className="truncate flex-1 text-left font-sans">{item.label}</span>
               )}
 
               {!collapsed && item.badge !== undefined && Number(item.badge) > 0 && (
-                <span className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold ${item.badgeColor}`}>
+                <span className="w-5 h-5 rounded-full bg-red-600 text-white font-mono text-[10px] font-bold flex items-center justify-center shadow-[0_0_10px_rgba(239,68,68,0.6)]">
                   {item.badge}
                 </span>
               )}
 
               {!collapsed && item.tag && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400/90 border border-emerald-800/40 font-mono">
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono ${
+                  item.tag === 'CesiumJS' 
+                    ? 'bg-cyan-950/70 text-cyan-300 border border-cyan-500/40 shadow-[0_0_8px_rgba(6,182,212,0.25)]' 
+                    : 'bg-emerald-950/70 text-emerald-300 border border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.25)]'
+                }`}>
                   {item.tag}
                 </span>
               )}
 
               {/* Collapsed active dot indicator */}
               {collapsed && isActive && (
-                <span className="absolute right-1 w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span className="absolute right-1 w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)]" />
               )}
             </button>
           );
@@ -193,28 +194,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Telemetry Footer */}
-      <div className="p-3 border-t border-[#1a2620] bg-[#090d0b]">
+      <div className="p-3 border-t border-teal-500/15 bg-gradient-to-t from-[#0e1b15]/90 to-[#09100d]/70">
         {collapsed ? (
           <button
             onClick={onToggleCollapse}
-            className="w-full flex justify-center p-2 rounded text-slate-400 hover:text-slate-200 hover:bg-[#141d18]"
+            className="w-full flex justify-center p-2 rounded-xl text-slate-400 hover:text-teal-300 hover:bg-teal-950/40 border border-transparent hover:border-teal-500/30"
             title="Expand Sidebar"
           >
             <ChevronRight size={18} />
           </button>
         ) : (
-          <div className="rounded-lg bg-[#111915] border border-[#1e2c24] p-2.5 space-y-2">
+          <div className="rounded-xl bg-[#0d1a14]/90 border border-teal-500/25 p-2.5 space-y-1.5 shadow-[0_0_12px_rgba(20,184,166,0.1)]">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-400 flex items-center gap-1.5 font-mono">
-                <ShieldCheck size={14} className="text-emerald-400" />
+              <span className="text-slate-400 flex items-center gap-1.5 font-mono text-[11px]">
+                <ShieldCheck size={14} className="text-teal-400" />
                 ORBIT LINK
               </span>
-              <span className="text-[11px] font-mono text-emerald-400 font-semibold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] font-mono text-teal-300 font-semibold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse shadow-[0_0_6px_rgba(45,212,191,0.8)]" />
                 ONLINE
               </span>
             </div>
-            <div className="text-[11px] text-slate-400 font-mono truncate">
+            <div className="text-[11px] text-teal-400/70 font-mono truncate">
               Sentinel-2B • Landsat-9
             </div>
           </div>

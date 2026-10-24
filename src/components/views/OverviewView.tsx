@@ -69,37 +69,39 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Overview Mission Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-xl bg-gradient-to-r from-[#0f1713] via-[#121c17] to-[#0c1410] border border-[#1e2e25] relative overflow-hidden">
+      <div className="card-panel p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden border border-teal-500/35 shadow-[0_12px_35px_rgba(0,0,0,0.6),0_0_20px_rgba(20,184,166,0.15)]">
         {/* Subtle background radar ring */}
-        <div className="absolute right-0 top-0 bottom-0 w-80 bg-radial from-emerald-500/5 to-transparent pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-96 bg-radial from-teal-500/10 to-transparent pointer-events-none" />
 
-        <div className="space-y-1 z-10">
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-100 flex items-center gap-2 m-0">
+        <div className="space-y-1.5 z-10">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2 m-0 font-sans">
               Environmental Intelligence Overview
             </h1>
             <DemoBadge />
           </div>
-          <p className="text-xs sm:text-sm text-slate-400 font-mono">
-            Bi-temporal satellite canopy analysis • Zone: <strong className="text-emerald-400">{region.name}</strong> ({region.country})
+          <p className="text-xs sm:text-sm text-slate-300 font-mono">
+            Bi-temporal satellite canopy analysis • Zone: <strong className="text-teal-300 font-bold">{region.name}</strong> <span className="text-slate-400">({region.country})</span>
           </p>
         </div>
 
         {/* Global actions */}
-        <div className="flex items-center gap-2.5 z-10">
+        <div className="flex items-center gap-3 z-10 shrink-0">
           <Button
             variant="outline"
-            size="sm"
-            icon={<Satellite size={14} />}
+            size="md"
+            icon={<Satellite size={15} className="text-teal-400" />}
             onClick={() => onNavigateToPage('earth-3d')}
+            className="shadow-[0_0_12px_rgba(20,184,166,0.15)]"
           >
             Launch 3D Earth
           </Button>
           <Button
             variant="primary"
-            size="sm"
-            icon={<Flame size={14} />}
+            size="md"
+            icon={<Flame size={15} />}
             onClick={() => onNavigateToPage('forest-loss-detection')}
+            className="shadow-[0_0_22px_rgba(45,212,191,0.5)]"
           >
             Run Loss Detection
           </Button>
@@ -179,11 +181,11 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
           {/* Interactive Map Workspace Placeholder (Integration point for CesiumJS) */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold">
-                Geospatial Monitoring Viewport & Anomaly Vectors
+            <div className="flex items-center justify-between px-2 pb-0.5">
+              <span className="text-[11px] font-mono uppercase tracking-widest text-teal-400 font-bold">
+                GEOSPATIAL MONITORING VIEWPORT & ANOMALY VECTORS
               </span>
-              <span className="text-xs font-mono text-emerald-400">
+              <span className="text-[11px] font-mono text-teal-300 font-medium">
                 Click any hotspot to inspect spectral signature
               </span>
             </div>
