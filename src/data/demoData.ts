@@ -1,0 +1,313 @@
+import type { 
+  Region, 
+  ForestLossEvent, 
+  TrendDataPoint, 
+  SeverityDistributionItem, 
+  MonitoringActivity 
+} from '../types/monitoring';
+
+export const DEMO_DATA_DISCLAIMER = "DEMO DATA: Synthetic environmental metrics for platform demonstration purposes only. Not calibrated for regulatory or ground-truth enforcement.";
+
+export const MONITORED_REGIONS: Region[] = [
+  {
+    id: 'all',
+    name: 'All Monitored Regions',
+    country: 'Global Coverage',
+    biome: 'Global Tropical & Temperate Forests',
+    coordinates: { lat: -3.4653, lng: -62.2159 },
+    totalAreaHectares: 24500000,
+    monitoredCanopyHectares: 21800000,
+    canopyDensityPct: 89.2,
+    riskRating: 'Severe',
+    lastSatellitePass: '24 mins ago (Sentinel-2B)'
+  },
+  {
+    id: 'amazon-br',
+    name: 'Amazon Basin - Sector 4B',
+    country: 'Brazil (Pará / Mato Grosso)',
+    biome: 'Dense Tropical Moist Broadleaf',
+    coordinates: { lat: -3.4653, lng: -62.2159 },
+    totalAreaHectares: 12450000,
+    monitoredCanopyHectares: 11120000,
+    canopyDensityPct: 91.4,
+    riskRating: 'Severe',
+    lastSatellitePass: '14 mins ago (Sentinel-2B)'
+  },
+  {
+    id: 'congo-drc',
+    name: 'Congo Basin - Central Corridor',
+    country: 'DR Congo (Salonga - Équateur)',
+    biome: 'Congo Lowland Rainforest',
+    coordinates: { lat: -0.2280, lng: 20.8258 },
+    totalAreaHectares: 6820000,
+    monitoredCanopyHectares: 6240000,
+    canopyDensityPct: 88.6,
+    riskRating: 'High',
+    lastSatellitePass: '42 mins ago (Landsat-9)'
+  },
+  {
+    id: 'borneo-id',
+    name: 'Borneo Peat Swamp Transect',
+    country: 'Indonesia (Central Kalimantan)',
+    biome: 'Tropical Peat Swamp Forest',
+    coordinates: { lat: -1.6815, lng: 113.3824 },
+    totalAreaHectares: 3180000,
+    monitoredCanopyHectares: 2790000,
+    canopyDensityPct: 84.1,
+    riskRating: 'Severe',
+    lastSatellitePass: '1 hr ago (Sentinel-2A)'
+  },
+  {
+    id: 'valdivia-cl',
+    name: 'Valdivian Temperate Biome',
+    country: 'Chile (Los Ríos Region)',
+    biome: 'Temperate Broadleaf & Mixed',
+    coordinates: { lat: -39.8142, lng: -73.2459 },
+    totalAreaHectares: 1150000,
+    monitoredCanopyHectares: 1040000,
+    canopyDensityPct: 93.8,
+    riskRating: 'Moderate',
+    lastSatellitePass: '2 hrs ago (Landsat-9)'
+  },
+  {
+    id: 'daintree-au',
+    name: 'Daintree Wet Tropics Arc',
+    country: 'Australia (Queensland)',
+    biome: 'Tropical Evergreen Rainforest',
+    coordinates: { lat: -16.1700, lng: 145.4185 },
+    totalAreaHectares: 890000,
+    monitoredCanopyHectares: 810000,
+    canopyDensityPct: 95.0,
+    riskRating: 'Moderate',
+    lastSatellitePass: '3 hrs ago (PlanetScope 3m)'
+  }
+];
+
+export const DEMO_FOREST_LOSS_EVENTS: ForestLossEvent[] = [
+  {
+    id: 'EVT-2026-0941',
+    regionId: 'amazon-br',
+    regionName: 'Amazon Basin - Sector 4B',
+    coordinates: { lat: -4.1284, lng: -55.9812 },
+    detectedDate: '2026-10-23',
+    areaHectares: 142.6,
+    severity: 'critical',
+    confidenceScore: 0.96,
+    sensorSource: 'Sentinel-2 MSI',
+    ndviDrop: -0.48,
+    status: 'confirmed',
+    primaryDriver: 'Illegal Logging',
+    inspectorNotes: 'Rapid herringbone pattern road expansion detected adjacent to indigenous territory boundary.',
+    tileCoordinates: '21LTL - Row 067 / Path 224',
+    cloudCoveragePct: 4.2
+  },
+  {
+    id: 'EVT-2026-0938',
+    regionId: 'amazon-br',
+    regionName: 'Amazon Basin - Sector 4B',
+    coordinates: { lat: -3.8912, lng: -54.7214 },
+    detectedDate: '2026-10-22',
+    areaHectares: 88.3,
+    severity: 'critical',
+    confidenceScore: 0.93,
+    sensorSource: 'PlanetScope 3m',
+    ndviDrop: -0.52,
+    status: 'confirmed',
+    primaryDriver: 'Agricultural Expansion',
+    inspectorNotes: 'High-contrast perimeter clearing with burn scar signature verified in thermal band.',
+    tileCoordinates: '21LTK - Row 068 / Path 223',
+    cloudCoveragePct: 1.8
+  },
+  {
+    id: 'EVT-2026-0935',
+    regionId: 'borneo-id',
+    regionName: 'Borneo Peat Swamp Transect',
+    coordinates: { lat: -2.0142, lng: 113.8821 },
+    detectedDate: '2026-10-21',
+    areaHectares: 64.7,
+    severity: 'high',
+    confidenceScore: 0.91,
+    sensorSource: 'Sentinel-2 MSI',
+    ndviDrop: -0.39,
+    status: 'verifying',
+    primaryDriver: 'Drainage Canal Excavation' as any,
+    inspectorNotes: 'Artificial canal drainage signature leading to peat soil desiccation and canopy canopy loss.',
+    tileCoordinates: '49MEM - Row 059 / Path 118',
+    cloudCoveragePct: 9.1
+  },
+  {
+    id: 'EVT-2026-0931',
+    regionId: 'congo-drc',
+    regionName: 'Congo Basin - Central Corridor',
+    coordinates: { lat: 0.4129, lng: 21.3412 },
+    detectedDate: '2026-10-20',
+    areaHectares: 37.8,
+    severity: 'high',
+    confidenceScore: 0.88,
+    sensorSource: 'Landsat-9 OLI-2',
+    ndviDrop: -0.34,
+    status: 'confirmed',
+    primaryDriver: 'Road Corridor Construction',
+    inspectorNotes: 'Linear logging corridor puncture through intact primary forest canopy extending 8.4 km.',
+    tileCoordinates: '34NCL - Row 059 / Path 176',
+    cloudCoveragePct: 12.0
+  },
+  {
+    id: 'EVT-2026-0927',
+    regionId: 'amazon-br',
+    regionName: 'Amazon Basin - Sector 4B',
+    coordinates: { lat: -5.3218, lng: -56.1293 },
+    detectedDate: '2026-10-18',
+    areaHectares: 26.4,
+    severity: 'moderate',
+    confidenceScore: 0.84,
+    sensorSource: 'Sentinel-2 MSI',
+    ndviDrop: -0.27,
+    status: 'flagged',
+    primaryDriver: 'Alluvial Mining',
+    inspectorNotes: 'Riparian buffer disruption and sediment plumes observed along Tapajós river tributary.',
+    tileCoordinates: '21LTJ - Row 069 / Path 224',
+    cloudCoveragePct: 7.3
+  },
+  {
+    id: 'EVT-2026-0922',
+    regionId: 'borneo-id',
+    regionName: 'Borneo Peat Swamp Transect',
+    coordinates: { lat: -1.4391, lng: 112.9812 },
+    detectedDate: '2026-10-16',
+    areaHectares: 19.5,
+    severity: 'moderate',
+    confidenceScore: 0.82,
+    sensorSource: 'Landsat-9 OLI-2',
+    ndviDrop: -0.25,
+    status: 'confirmed',
+    primaryDriver: 'Wildfire Encroachment',
+    inspectorNotes: 'Dry season peat understory burn contained along primary access trench.',
+    tileCoordinates: '49MEN - Row 060 / Path 117',
+    cloudCoveragePct: 3.5
+  },
+  {
+    id: 'EVT-2026-0918',
+    regionId: 'congo-drc',
+    regionName: 'Congo Basin - Central Corridor',
+    coordinates: { lat: -0.8912, lng: 22.1092 },
+    detectedDate: '2026-10-14',
+    areaHectares: 14.1,
+    severity: 'low',
+    confidenceScore: 0.79,
+    sensorSource: 'Sentinel-2 MSI',
+    ndviDrop: -0.19,
+    status: 'resolved',
+    primaryDriver: 'Agricultural Expansion',
+    inspectorNotes: 'Seasonal subsistence plot rotation, minimal canopy conversion outside authorized community zoning.',
+    tileCoordinates: '34NDL - Row 061 / Path 175',
+    cloudCoveragePct: 15.4
+  },
+  {
+    id: 'EVT-2026-0914',
+    regionId: 'valdivia-cl',
+    regionName: 'Valdivian Temperate Biome',
+    coordinates: { lat: -40.1120, lng: -72.8914 },
+    detectedDate: '2026-10-10',
+    areaHectares: 8.6,
+    severity: 'low',
+    confidenceScore: 0.77,
+    sensorSource: 'Sentinel-2 MSI',
+    ndviDrop: -0.16,
+    status: 'resolved',
+    primaryDriver: 'Illegal Logging',
+    inspectorNotes: 'Selective felling of endangered Alerce stands; ranger enforcement team deployed.',
+    tileCoordinates: '18GYH - Row 088 / Path 233',
+    cloudCoveragePct: 6.2
+  }
+];
+
+export const DEMO_TREND_DATA: Record<string, TrendDataPoint[]> = {
+  '7d': [
+    { label: 'Oct 18', detectedLossHectares: 26.4, baselineRateHectares: 18.0, confidenceAverage: 0.88 },
+    { label: 'Oct 19', detectedLossHectares: 18.2, baselineRateHectares: 17.5, confidenceAverage: 0.89 },
+    { label: 'Oct 20', detectedLossHectares: 37.8, baselineRateHectares: 18.2, confidenceAverage: 0.91 },
+    { label: 'Oct 21', detectedLossHectares: 64.7, baselineRateHectares: 19.0, confidenceAverage: 0.92 },
+    { label: 'Oct 22', detectedLossHectares: 88.3, baselineRateHectares: 18.5, confidenceAverage: 0.94 },
+    { label: 'Oct 23', detectedLossHectares: 142.6, baselineRateHectares: 19.5, confidenceAverage: 0.96 },
+    { label: 'Oct 24', detectedLossHectares: 41.5, baselineRateHectares: 19.0, confidenceAverage: 0.93 },
+  ],
+  '30d': [
+    { label: 'Sep 25 - Oct 01', detectedLossHectares: 112.4, baselineRateHectares: 135.0, confidenceAverage: 0.87 },
+    { label: 'Oct 02 - Oct 08', detectedLossHectares: 148.8, baselineRateHectares: 130.0, confidenceAverage: 0.89 },
+    { label: 'Oct 09 - Oct 15', detectedLossHectares: 184.2, baselineRateHectares: 128.0, confidenceAverage: 0.91 },
+    { label: 'Oct 16 - Oct 22', detectedLossHectares: 235.5, baselineRateHectares: 132.0, confidenceAverage: 0.94 },
+    { label: 'Oct 23 - Oct 24', detectedLossHectares: 184.1, baselineRateHectares: 80.0, confidenceAverage: 0.95 },
+  ],
+  '90d': [
+    { label: 'Aug 2026', detectedLossHectares: 680.5, baselineRateHectares: 540.0, confidenceAverage: 0.89 },
+    { label: 'Sep 2026', detectedLossHectares: 742.1, baselineRateHectares: 535.0, confidenceAverage: 0.91 },
+    { label: 'Oct 2026 (MTD)', detectedLossHectares: 865.0, baselineRateHectares: 490.0, confidenceAverage: 0.93 },
+  ],
+  'ytd': [
+    { label: 'Q1 2026', detectedLossHectares: 1820.4, baselineRateHectares: 1750.0, confidenceAverage: 0.88 },
+    { label: 'Q2 2026', detectedLossHectares: 2190.2, baselineRateHectares: 1810.0, confidenceAverage: 0.90 },
+    { label: 'Q3 2026', detectedLossHectares: 2450.8, baselineRateHectares: 1850.0, confidenceAverage: 0.92 },
+    { label: 'Q4 2026 (Est)', detectedLossHectares: 1140.0, baselineRateHectares: 1200.0, confidenceAverage: 0.93 },
+  ]
+};
+
+export const DEMO_SEVERITY_DISTRIBUTION: SeverityDistributionItem[] = [
+  { level: 'critical', label: 'Critical Loss (>80 ha)', count: 2, hectares: 230.9, color: '#ef4444', percentage: 55.1 },
+  { level: 'high', label: 'High Loss (30-80 ha)', count: 2, hectares: 102.5, color: '#f97316', percentage: 24.4 },
+  { level: 'moderate', label: 'Moderate Loss (15-30 ha)', count: 2, hectares: 45.9, color: '#eab308', percentage: 10.9 },
+  { level: 'low', label: 'Low Loss (<15 ha)', count: 2, hectares: 22.7, color: '#10b981', percentage: 9.6 }
+];
+
+export const DEMO_ACTIVITIES: MonitoringActivity[] = [
+  {
+    id: 'ACT-1082',
+    timestamp: '12m ago',
+    type: 'alert',
+    title: 'High Severity Alert Dispatched',
+    details: 'Triggered 142.6 ha anomaly in Amazon Sector 4B (Pará). Confidence: 96%.',
+    level: 'alert',
+    sensor: 'Sentinel-2 MSI',
+    regionCode: 'BR-AMZ-4B'
+  },
+  {
+    id: 'ACT-1081',
+    timestamp: '28m ago',
+    type: 'inference',
+    title: 'UNet Bi-Temporal Inference Complete',
+    details: 'Pass tile 21LTL processed in 3.4s. 3 new candidate loss clusters segmented.',
+    level: 'info',
+    sensor: 'AI Model v4.2',
+    regionCode: 'GLOBAL'
+  },
+  {
+    id: 'ACT-1080',
+    timestamp: '44m ago',
+    type: 'ingest',
+    title: 'Copernicus Sentinel-2B Pass Ingested',
+    details: 'Level-2A Bottom-Of-Atmosphere reflectance calibrated. Cloud cover: 4.2%.',
+    level: 'success',
+    sensor: 'Sentinel-2B',
+    regionCode: 'AMZ-BR'
+  },
+  {
+    id: 'ACT-1079',
+    timestamp: '1h 15m ago',
+    type: 'validation',
+    title: 'Ground Truth Report Synced',
+    details: 'Ranger Station 7 confirmed illegal road corridor in Congo Central Basin.',
+    level: 'warning',
+    sensor: 'Field Tablet GPS',
+    regionCode: 'CD-SAL'
+  },
+  {
+    id: 'ACT-1078',
+    timestamp: '2h 05m ago',
+    type: 'sensor_calibration',
+    title: 'Landsat-9 OLI-2 Band Radiance Check',
+    details: 'Atmospheric correction parameters aligned with local aeronet photometers.',
+    level: 'info',
+    sensor: 'Landsat-9 OLI-2',
+    regionCode: 'ID-KLT'
+  }
+];
