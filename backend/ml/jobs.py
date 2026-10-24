@@ -18,10 +18,14 @@ from .pipeline import (
     RasterCompatibilityError,
 )
 
-logger = logging.getLogger("ml_jobs")
+import tempfile
 
 ML_JOBS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "ml_jobs")
-os.makedirs(ML_JOBS_DIR, exist_ok=True)
+try:
+    os.makedirs(ML_JOBS_DIR, exist_ok=True)
+except OSError:
+    ML_JOBS_DIR = os.path.join(tempfile.gettempdir(), "cl01_ml_jobs")
+    os.makedirs(ML_JOBS_DIR, exist_ok=True)
 
 
 class MLJobStatus:

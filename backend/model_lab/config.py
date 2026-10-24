@@ -13,9 +13,29 @@ JOBS_DIR = os.path.join(MODEL_LAB_BASE_DIR, "jobs")
 MODELS_DIR = os.path.join(MODEL_LAB_BASE_DIR, "models")
 INFERENCE_DIR = os.path.join(MODEL_LAB_BASE_DIR, "inference")
 
-# Ensure required directories exist
-for d in [DATASETS_DIR, JOBS_DIR, MODELS_DIR, INFERENCE_DIR]:
-    os.makedirs(d, exist_ok=True)
+import tempfile
+
+def _resolve_storage_dir(base_path: str, fallback_name: str) -> str:
+    try:
+        os.makedirs(base_path, exist_ok=True)
+        # Verify write permission
+        test_file = os.path.join(base_path, ".write_test")
+        with open(test_file, "w") as f:
+            f.write("ok")
+        os.remove(test_file)
+        return base_path
+    except OSError:
+        tmp = os.path.join(tempfile.gettempdir(), "cl01_model_lab", fallback_name)
+        os.makedirs(tmp, exist_ok=True)
+        return tmp
+
+JOBS_DIR = _resolve_storage_dir(JOBS_DIR, "jobs")
+INFERENCE_DIR = _resolve_storage_dir(INFERENCE_DIR, "inference")
+try:
+    os.makedirs(DATASETS_DIR, exist_ok=True)
+    os.makedirs(MODELS_DIR, exist_ok=True)
+except OSError:
+    pass
 
 # Upload constraints
 MAX_DATASET_UPLOAD_BYTES = 200 * 1024 * 1024  # 200 MB

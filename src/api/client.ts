@@ -26,20 +26,7 @@ if (import.meta.env.PROD && _rawEnvUrl && /https?:\/\/(localhost|127\.0\.0\.1)/i
   console.error(
     '[CL-01 API] FATAL CONFIG: VITE_API_BASE_URL is set to a localhost URL in the production build.\n' +
     'This means every visitor to your deployed site will get a "Backend Service Unavailable" error ' +
-    'because localhost is only reachable on your own machine.\n' +
-    'Fix: In your Vercel dashboard → Project → Settings → Environment Variables, ' +
-    'set VITE_API_BASE_URL to your deployed backend HTTPS URL ' +
-    '(e.g. https://cl01-api.onrender.com) then redeploy.'
-  );
-}
-
-if (import.meta.env.PROD && !_rawEnvUrl) {
-  console.warn(
-    '[CL-01 API] VITE_API_BASE_URL is not set in the production build.\n' +
-    'API calls will use same-origin relative URLs (/api/...).\n' +
-    'This only works if the FastAPI backend is deployed on the same domain.\n' +
-    'For a separate backend (e.g. Render.com), set VITE_API_BASE_URL in your Vercel ' +
-    'Project → Settings → Environment Variables and redeploy.'
+    'because localhost is only reachable on your own machine.'
   );
 }
 
@@ -129,8 +116,7 @@ export function formatApiErrorMessage(err: unknown): string {
     switch (err.category) {
       case 'unavailable':
         if (import.meta.env.PROD) {
-          return 'Backend Service Unavailable — The FastAPI backend is not reachable from this deployed site. ' +
-            'Deploy the backend (render.yaml → Render.com) and set VITE_API_BASE_URL in Vercel Project Settings, then redeploy.';
+          return 'Backend Service Unavailable — The FastAPI serverless function was unreachable or timed out. Please try again.';
         }
         return 'Backend Service Unavailable — Start the local backend: py -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload';
       case 'not_found':
@@ -144,11 +130,7 @@ export function formatApiErrorMessage(err: unknown): string {
       case 'server_error':
         return `Backend Server Error (HTTP ${err.statusCode}) — ${err.detail || 'Internal server error occurred.'}`;
       case 'parse_error':
-        return err.detail.includes('HTML') || err.detail.includes('html')
-          ? 'Backend Not Configured — The API returned an HTML page instead of JSON. ' +
-            'The FastAPI backend is not deployed. Set VITE_API_BASE_URL in Vercel → Project Settings → Environment Variables ' +
-            'to your deployed Render.com backend URL and redeploy.'
-          : `Response Parse Error — The server returned an unexpected format: ${err.detail}`;
+        return `Response Parse Error — The server returned an unexpected format: ${err.detail}`;
       default:
         return `API Error (${err.statusCode}): ${err.detail}`;
     }
@@ -156,8 +138,7 @@ export function formatApiErrorMessage(err: unknown): string {
   if (err instanceof Error) {
     if (err.message.includes('fetch') || err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
       if (import.meta.env.PROD) {
-        return 'Backend Service Unavailable — The FastAPI backend is not deployed. ' +
-          'Deploy it to Render.com using render.yaml and set VITE_API_BASE_URL in Vercel Project Settings.';
+        return 'Backend Service Unavailable — Could not reach the API endpoint. Please check your network connection.';
       }
       return 'Backend Service Unavailable — Start the local backend: py -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload';
     }
@@ -281,10 +262,10 @@ export async function apiFetch<T>(path: string, options?: ApiFetchOptions): Prom
         networkErr = makeApiError(
           503,
           isMixedContent
-            ? `Mixed Content blocked: cannot call HTTP backend (${API_BASE_URL}) from an HTTPS page. ` +
-              'Set VITE_API_BASE_URL to an HTTPS backend URL in Vercel Project Settings.'
-            : 'FastAPI backend is unreachable. In production: deploy backend and set VITE_API_BASE_URL. ' +
-              'Locally: run py -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload',
+            ? `Mixed Content blocked: cannot call HTTP backend (${API_BASE_URL}) from an HTTPS page.`
+            : import.meta.env.PROD
+              ? 'FastAPI backend is unreachable or experiencing a network disruption. Please retry.'
+              : 'FastAPI backend is unreachable. Start local backend: py -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload',
           url,
           'unavailable'
         );

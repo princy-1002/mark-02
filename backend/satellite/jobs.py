@@ -18,8 +18,14 @@ from .provider import ImageryUnavailableError
 
 logger = logging.getLogger("satellite_jobs")
 
+import tempfile
+
 JOBS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "jobs")
-os.makedirs(JOBS_DIR, exist_ok=True)
+try:
+    os.makedirs(JOBS_DIR, exist_ok=True)
+except OSError:
+    JOBS_DIR = os.path.join(tempfile.gettempdir(), "cl01_satellite_jobs")
+    os.makedirs(JOBS_DIR, exist_ok=True)
 
 
 class JobStatus:

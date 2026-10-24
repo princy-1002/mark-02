@@ -36,7 +36,13 @@ SATELLITE_OUTPUTS_BASE = os.path.abspath(
 ML_OUTPUTS_BASE = os.path.abspath(
     os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "ml_outputs")
 )
-os.makedirs(ML_OUTPUTS_BASE, exist_ok=True)
+import tempfile
+
+try:
+    os.makedirs(ML_OUTPUTS_BASE, exist_ok=True)
+except OSError:
+    ML_OUTPUTS_BASE = os.path.join(tempfile.gettempdir(), "cl01_ml_outputs")
+    os.makedirs(ML_OUTPUTS_BASE, exist_ok=True)
 
 
 class InferenceSecurityError(Exception):
